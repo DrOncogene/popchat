@@ -30,13 +30,17 @@ class Engine:
         return model.objects(id=id).first()
     
     def get_by_username(self, name: str) -> User:
-        """fetches a document by username"""
+        """fetches a user by username"""
         return User.objects(username=name).first()
     
     def get_by_email(self, email: str) -> User:
-        """fetches a document by email"""
+        """fetches a user by email"""
         return User.objects(email=email).first()
     
-    def get_by_token(self, token: str) -> User:
-        """fetches a document by token"""
+    def get_by_auth_token(self, token: str) -> User:
+        """fetches a user by auth token"""
         return User.objects(auth_token=token).first()
+    
+    def get_by_reset_token(self, token: str) -> User:
+        """fetches a user by reset token"""
+        return User.objects(reset_token=token).first()
