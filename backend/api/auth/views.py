@@ -5,7 +5,9 @@ authentication endpoints
 from datetime import datetime, timedelta, timezone
 from secrets import token_hex
 from typing import Annotated
-from fastapi import Cookie, Form, Depends, Header, Response
+from fastapi import Cookie, Form, Depends, Header
+from fastapi.responses import JSONResponse
+from fastapi.exceptions import HTTPException
 from fastapi_jwt_auth import AuthJWT
 from mongoengine.errors import NotUniqueError
 
@@ -16,37 +18,44 @@ from . import auth_router
 
 
 @auth_router.post('/register', status_code=201)
-async def register(user: UserIn) -> Response:
+async def register(user: UserIn) -> JSONResponse:
     """login route"""
     username = user.username
     email = user.email
     passwd = user.password
 
     if not username or not email or not passwd:
-        return Response(status_code=400,
-                        content="username, email and password required")
+        raise HTTPException(status_code=400,
+                            detail="username, email and password required")
+    if db.get_by_username(username):
+        raise HTTPException(status_code=409,
+                            detail="username already exists")
+    if db.get_by_email(email):
+        raise HTTPException(status_code=409, detail="email already exists")
     new_user = User(username=username, email=email)
     new_user.set_password(passwd)
     try:
         new_user.save()
     except NotUniqueError as err:
-        return Response( content=str(err), status_code=409)
+        raise HTTPException(status_code=409,
+                            detail="username or email already exists")
     except Exception as err:
-        return Response(content=str(err), status_code=500)
+        raise HTTPException(status_code=500, detail='Error creating user')
 
-    return Response("success")
+    return JSONResponse({"message": "login success"})
     
 
 
 @auth_router.post('/login')
 async def login(
     user: UserIn,
-    response: Response,
+    response: JSONResponse,
     JWT: Annotated[AuthJWT, Depends()]
 ) -> UserOut:
     login_id = user.username or user.email
     if not login_id:
-        return Response(status_code=400, content="username or email required")
+        return HTTPException(status_code=400,
+                             detail="username or email required")
 
     if user.username:
         the_user = db.get_by_username(login_id)
@@ -54,13 +63,13 @@ async def login(
         the_user = db.get_by_email(login_id)
 
     if not the_user:
-        return Response('User does not exist', status_code=404)
+        return HTTPException(status_code=404, detail='User does not exist')
 
     if not the_user.validate_password(user.password):
-        return Response('Invalid password', status_code=401)
+        return HTTPException(status_code=401, detail='Invalid password')
 
-    new_token = str(JWT.create_access_token(identity=the_user.username))
-    the_user.auth_token = new_token
+    new_token = JWT.create_access_token(identity=the_user.username)
+    the_user.auth_token = str(new_token)
     the_user.save()
 
     response.set_cookie(
@@ -74,29 +83,29 @@ async def login(
 
 
 @auth_router.get('/logout')
-async def logout(token: Annotated[str, Cookie(alias='auth')]) -> Response:
-    user = db.get_by_token(token)
+async def logout(token: Annotated[str, Cookie(alias='auth')]) -> JSONResponse:
+    user = db.get_by_auth_token(token)
     if not user:
-        return Response('Invalid token', status_code=401)
+        return HTTPException(status_code=401, detail='Invalid token')
 
     user.auth_token = None
     user.save()
 
-    return Response('success')
+    return JSONResponse({'message': 'logout success'})
 
 
 @auth_router.get('/forgot_password')
-async def get_reset_token(email: str, response: Response) -> Response:
+async def get_reset_token(email: str, response: JSONResponse) -> JSONResponse:
     user = db.get_by_email(email)
     if not user:
-        return Response('User does not exist', status_code=404)
+        return HTTPException(status_code=404, detail='User does not exist')
 
     reset_token = token_hex()
     user.reset_token = reset_token
     user.save()
     response.headers['X-Reset-Token'] = reset_token
 
-    return Response('success')
+    return JSONResponse({'message': 'success'})
 
 
 @auth_router.post('/reset_password/{reset_token}}')
