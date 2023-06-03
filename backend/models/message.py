@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """Messages model."""
-from mongoengine import EmbeddedDocument, StringField, DateTimeField, ReferenceField
+from mongoengine import (
+    EmbeddedDocument,
+    StringField,
+    DateTimeField,
+)
 
 from .user import User
 
@@ -8,7 +12,7 @@ from .user import User
 class Message(EmbeddedDocument):
     """Message model."""
     text = StringField(required=True)
-    sender = ReferenceField(User, required=True)
+    sender = StringField(required=True)
     when = DateTimeField(required=True)
 
     def to_dict(self):

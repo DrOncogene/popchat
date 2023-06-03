@@ -28,7 +28,6 @@ class User(Base, Document):
     def to_dict(self) -> dict:
         """converts user to dict"""
         obj_dict = super().to_dict()
-        del obj_dict['password']
 
         return obj_dict
     

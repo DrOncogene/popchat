@@ -24,6 +24,7 @@ class UserIn(UserBase):
 
 class UserOut(UserBase):
     """user model for the api"""
+    id: str
     auth_token: str
 
 
@@ -35,12 +36,14 @@ class Message(BaseModel):
 
 class Chat(BaseModel):
     """chat model for the api"""
+    id: str
     name: str
     members: list[UserOut]
     messages: list[Message]
 
 class ApiRoom(BaseModel):
     """room model for the api"""
+    id: str
     name: str
     members: list[UserOut]
     admins: list[UserOut]

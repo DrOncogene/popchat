@@ -74,8 +74,8 @@ class Base:
         obj_dict['created_at'] = obj_dict['created_at'].isoformat()
         obj_dict['updated_at'] = obj_dict['updated_at'].isoformat()
         obj_dict['id'] = str(obj_dict['_id'])
-        obj_dict.update({k: v for k, v in obj_dict.items()\
-                         if not k.startswith('_') and\
-                         k not in ['created_at', 'updated_at']}
-        )
-        return obj_dict
+
+        return {k: v for k, v in obj_dict.items()\
+                if not k.startswith('_') and\
+                k not in ['password', 'reset_token']
+        }
