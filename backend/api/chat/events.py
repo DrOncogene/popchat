@@ -267,16 +267,11 @@ def get_chat(sid: str, payload: dict) -> dict:
     for message in chat['messages']:
         when = message['when']
         when_date = datetime.fromisoformat(when).date().strftime('%Y-%m-%d')
-        found = False
         for day in messages:
             day_date = day[0]
             day_messages = day[1]
             if day_date == when_date:
                 day_messages.append(message)
-                found = True
-                break
-            if not found:
-                messages.append([when_date, [message]])
                 break
         else:
             messages.append([when_date, [message]])
