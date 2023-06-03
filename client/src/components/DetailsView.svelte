@@ -5,6 +5,7 @@
   import ChatHeader from "./ChatHeader.svelte";
   import { newChat } from "../lib/helpers";
 
+  export let details: User | Room | Chat;
 </script>
 
 {#key $currentDetail}

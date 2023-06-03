@@ -1,10 +1,20 @@
 <script lang="ts">
+  import { onMount, tick } from 'svelte';
   import ChatPlus from 'svelte-material-icons/ChatPlus.svelte';
-  import { user, currentChat, currentRoom, currentDetail } from '../lib/store';
+  import {
+    user,
+    currentChat,
+    currentRoom,
+    currentDetail,
+    activeChats as allChats,
+  } from '../lib/store';
   import FormInput from './FormInput.svelte';
   import ChatList from './ChatList.svelte';
   import {
-    fetchCurrentChat,
+    fetchChat,
+    fetchUser,
+    fetchUserChats,
+    changeState,
     toggleWidget,
     showDetails,
     logout
@@ -16,7 +26,10 @@
   import ChatView from './ChatView.svelte';
   import DetailsView from './DetailsView.svelte';
 
-  fetchCurrentChat();
+  fetchChat();
+  fetchUserChats();
+  // let activeChats: (Chat | Room)[] = [];
+  let matches = [];
 
   function search(e: KeyboardEvent) {
     const input = <HTMLInputElement>e.target;
@@ -24,12 +37,11 @@
 
     matches = [];
     if (term.replace('@', '').length === 0) {
-      activeChats = $user.all_chats;
       return;
     }
     // filter by type and search term
     if (!term.startsWith('@')) {
-      const matchedActiveChats = $user.all_chats.filter((chat) => {
+      const matchedActiveChats = activeChats.filter((chat) => {
         const chatName = chat.name.toLowerCase();
         if (chatName.includes(term)) return chat;
       });
@@ -40,7 +52,7 @@
         return;
       }
       // else return to default state
-      activeChats = $user.all_chats;
+      activeChats = $allChats;
       return;
     }
     // search through all users
@@ -53,11 +65,10 @@
     });
   }
 
-  $: activeChats = $user ? $user.all_chats : null;
-  $: matches = [];
+  $: activeChats = $allChats;
 </script>
 
-<section class="main-section grid md:grid-cols-home md:max-w-[1040px] h-[600px] m-auto bg-dark-pri shadow-2xl shadow-black">
+<section class="main-section grid md:grid-cols-home md:max-w-[1040px] h-[550px] m-auto bg-dark-pri shadow-xl shadow-black">
   <aside class="right hidden relative md:flex flex-col border-r border-r-gray-500 w-[350px]">
     <div class="header h-[75px] flex justify-between items-center py-4 px-6 space-x-5 border-b border-b-gray-500">
       <a on:click={showDetails} data-username={$user.username} href="/" class="flex items-center py-4 px-6 space-x-5">
@@ -93,7 +104,7 @@
     </button>
   </aside>
 
-  <div class="relative left h-[600px] overflow-hidden">
+  <div class="relative left h-[550px] overflow-hidden">
     {#if $currentChat || $currentRoom}
       <ChatView />
     {:else}
@@ -101,8 +112,8 @@
         <p class="">Welcome! Choose a chat on the left to get started</p>
       </div>
     {/if}
-    {#if $currentDetail}
-      <DetailsView />
+    {#if $currentDetail} 
+      <DetailsView details={ $currentDetail }/>
     {/if}
   </div>
 </section>
