@@ -1,21 +1,17 @@
 <script lang="ts">
-  import { onMount, tick } from 'svelte';
   import ChatPlus from 'svelte-material-icons/ChatPlus.svelte';
   import {
     user,
-    currentChat,
-    currentRoom,
-    currentDetail,
+    chatStore,
+    roomStore,
     activeChats as allChats,
   } from '../lib/store';
   import FormInput from './FormInput.svelte';
   import ChatList from './ChatList.svelte';
   import {
-    fetchChat,
-    fetchUser,
+    fetchCurrentChatOrRoom,
     fetchUserChats,
-    changeState,
-    toggleWidget,
+    toggleRoomWidget,
     showDetails,
     logout
   } from '../lib/helpers';
@@ -26,9 +22,9 @@
   import ChatView from './ChatView.svelte';
   import DetailsView from './DetailsView.svelte';
 
-  fetchChat();
   fetchUserChats();
-  // let activeChats: (Chat | Room)[] = [];
+  fetchCurrentChatOrRoom();
+  
   let matches = [];
 
   function search(e: KeyboardEvent) {
@@ -56,12 +52,10 @@
       return;
     }
     // search through all users
-    socket.emit('get_users', (payload: User[]) => {
-      matches = payload.filter((currUser) => {
-        term = term.replace('@', '');
-        if ($user.username === currUser.username) return;
-        if (currUser.username.toLowerCase().includes(term)) return true;
-      });
+    term = term.replace('@', '');
+    socket.emit('get_users', { search_term: term }, (payload) => {
+      matches = payload.matches;
+      console.log('MATCHED', matches, payload);
     });
   }
 
@@ -99,21 +93,18 @@
       <ChatList bind:activeChats={ activeChats } />
       <NewRoom />
     </div>
-    <button on:click={toggleWidget} class="peer absolute right-2 bottom-2 w-12 h-12 rounded-full bg-pri-900 flex justify-center items-center shadow-lg shadow-black hover:shadow-none transition-shadow duration-300 z-50">
+    <button on:click={toggleRoomWidget} class="peer absolute right-2 bottom-2 w-12 h-12 rounded-full bg-pri-900 flex justify-center items-center shadow-lg shadow-black hover:shadow-none transition-shadow duration-300 z-50">
       <ChatPlus size="2em" />
     </button>
   </aside>
 
   <div class="relative left h-[550px] overflow-hidden">
-    {#if $currentChat || $currentRoom}
+    {#if $chatStore || $roomStore}
       <ChatView />
     {:else}
       <div class="w-full h-[525px] flex justify-center items-center">
         <p class="">Welcome! Choose a chat on the left to get started</p>
       </div>
-    {/if}
-    {#if $currentDetail} 
-      <DetailsView details={ $currentDetail }/>
     {/if}
   </div>
 </section>
