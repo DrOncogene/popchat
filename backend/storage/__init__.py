@@ -1,8 +1,9 @@
+#!/usr/bin/env python3
+
 """
-initialize a storage engine
-instance
+Instantiates a database storage engine instance.
 """
-from .engine import Engine
+from storage.engine import Engine
 
 
 db = Engine()
