@@ -39,11 +39,12 @@ class Room(Base, Document):
     :type messages: List of `Message` class instances.
     """
 
-    name = StringField(required=True)
-    creator = ReferenceField('User')
-    members = ListField(ReferenceField('User'))
-    admins = ListField(ReferenceField('User'))
+    name = StringField()
+    creator = StringField()
+    members = ListField(StringField(), required=True)
+    admins = ListField(StringField(), required=True)
     messages = ListField(EmbeddedDocumentField(Message))
+    last_msg = EmbeddedDocumentField(Message)
 
     def to_dict(self) -> dict:
         """Create a serializable format of `Room` object
@@ -53,8 +54,10 @@ class Room(Base, Document):
         """
 
         obj_dict = super().to_dict()
-        obj_dict['members'] = [user.username for user in self.members]
-        obj_dict['admins'] = [user.username for user in self.admins]
+        obj_dict['messages'] = [message.to_dict() for message
+                                in self.messages]
+        obj_dict['last_msg'] = (self.last_msg.to_dict()
+                                if self.last_msg else None)
 
         return obj_dict
 
@@ -67,4 +70,5 @@ class Room(Base, Document):
         """
 
         self.updated_at = datetime.utcnow()
+        self.last_msg = self.messages[-1] if len(self.messages) > 0 else None
         return super().save(*args, **kwargs)

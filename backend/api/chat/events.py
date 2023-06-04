@@ -11,60 +11,15 @@ from api.sockets import sio
 from storage import db
 from models.user import User
 from models.chat import Chat
-# from models.room import Room
+from models.room import Room
+from models.message import Message
 # from .background_tasks import put_user, add_message
-
-
-# @sio.on('get_users')
-# def get_users():
-#     """fetches all users"""
-#     all_users = db.get_all('User')
-
-#     return [user.to_dict() for user in all_users]
-
-
-# @sio.on('get_user')
-# def get_user(user_id: str):
-#     """fetches a user"""
-#     user = db.get_one('User', user_id)
-#     if user is None:
-#         return {'error': 'user not found', 'status': 404}
-
-#     user_dict: dict = user.to_dict()
-#     user_dict['all_chats'] = user_dict['rooms'] + user_dict['chats']
-#     user_dict['all_chats']\
-#         .sort(key=lambda x: datetime.fromisoformat(x['updated_at']),
-#               reverse=True)
-
-#     return user_dict
 
 
 # @sio.on('edit_user')
 # def edit_user(payload: dict):
 #     """deletes or edit a user"""
 #     sio.start_background_task(put_user, payload)
-
-
-# @sio.on('get_chat')
-# def get_chat(payload: dict):
-#     """fetches the rooms or chats for a user"""
-#     chat_id = payload.get('id')
-#     chat_type = payload.get('type')
-
-#     if chat_id is None:
-#         return
-
-#     if chat_type == 'room':
-#         room: dict = db.get_one('Room', chat_id).to_dict()
-#         room['messages'] = json.loads(room['messages'])
-#         room['type'] = 'room'
-#         return room
-#     if chat_type == 'chat':
-#         chat: Chat = db.get_one('Chat', chat_id)
-#         resp = chat.to_dict()
-#         resp['messages'] = json.loads(resp['messages'])
-#         resp['type'] = 'chat'
-#         return resp
 
 
 # @sio.on('create_room')
@@ -146,53 +101,41 @@ from models.chat import Chat
 # #     return dumps(user.to_dict())
 
 
-# def handle_chat(payload):
-#     """
-#     sends a message to the appropriate room
-
-#     :param payload: The message sent by the client
-#     """
-#     message = payload['message']
-#     chat_id = payload['chat_id']
-#     data = {
-#         'message': message,
-#         'chat_id': chat_id
-#     }
-#     emit('message', data, to=chat_id, include_self=False)
-#     sio.start_background_task(add_message, payload)
-
-
-# @sio.on('load_handlers')
-# def load_handlers(user: dict):
-#     """
-#     load all handlers for a newly connected user
-
-#     :param user: The dictionary containing the user data
-#     """
-#     join_room(user.get('username'))
-#     for room in user['rooms']:
-#         join_room(room['id'])
-#         sio.on_event('message', handle_chat)
-
-#     for chat in user['chats']:
-#         join_room(chat['id'])
-#         sio.on_event('message', handle_chat)
-
-
 @sio.on('connect')
-async def handle_connect(sid, msg):
+async def connect(sid: str, environ: dict, auth: dict) -> bool:
     """
-    handles the connection event
+    handles the connection event and adds the user
+    to the appropriate rooms and chats using the
+    `chat.id or room.id` as the room/chat name
 
     :param auth: Authentication dict
         passed by the client
     """
-    # load_handlers(payload.get('user'))
-    print('CONNECTED')
+    if auth is None:
+        return False
+
+    user_id = auth.get('id')
+    if user_id is None:
+        return False
+
+    user = db.get_by_id(User, user_id)
+    if user is None:
+        return False
+
+    rooms = db.get_rooms_by_user(user)
+    for room in rooms:
+        sio.enter_room(sid, str(room.id))
+
+    chats = db.get_chats_by_user(user)
+    for chat in chats:
+        sio.enter_room(sid, str(chat.id))
+
+    print(f'{user.username} CONNECTED')
+    return True
 
 
 @sio.on('disconnect')
-def handle_disconnect(sid):
+async def handle_disconnect(sid):
     """
     handles the disconnection event
 
@@ -201,32 +144,25 @@ def handle_disconnect(sid):
     print('DISCONNECTED')
 
 
+@sio.on('get_users')
+async def get_users(sid: str, payload: dict) -> dict:
+    """
+    fetches a list of users whose username matches a query
+    term
+    """
+    term: str = payload.get('search_term')
+    if term is None or term == '':
+        return {'error': 'no search term', 'status': 400}
+
+    matched_users = [user.to_dict() for user in db.match_users(term)]
+
+    return {'matches': matched_users, 'status': 200}
+
+
 @sio.on('get_user')
-def get_user(sid: str, payload: dict) -> dict:
+async def get_user(sid: str, payload: dict) -> dict:
     """fetches a user from the database"""
 
-    if not payload or len(payload) == 0:
-        return {'error': 'no username or id', 'status': 400}
-
-    username = payload.get('username')
-    user_id = payload.get('id')
-
-    user = db.get_by_username(username) or db.get_by_id(user_id)
-    if user is None:
-        return {'error': 'invalid id or username', 'status': 404}
-
-    return {'user': user.to_dict(), 'status': 200}
-
-
-@sio.on('get_user_chats')
-def get_user_chats(sid: str, payload: dict) -> dict:
-    """
-    fetches all active chats and rooms for a user
-
-    :param sid: The socket id of the client
-    :param payload: The payload sent by the client
-    """
-    
     if not payload or len(payload) == 0:
         return {'error': 'no username or id', 'status': 400}
 
@@ -236,7 +172,29 @@ def get_user_chats(sid: str, payload: dict) -> dict:
     user = db.get_by_username(username) or db.get_by_id(User, user_id)
     if user is None:
         return {'error': 'invalid id or username', 'status': 404}
-    
+
+    return {'user': user.to_dict(), 'status': 200}
+
+
+@sio.on('get_user_chats')
+async def get_user_chats(sid: str, payload: dict) -> dict:
+    """
+    fetches all active chats and rooms for a user
+
+    :param sid: The socket id of the client
+    :param payload: The payload sent by the client
+    """
+
+    if not payload or len(payload) == 0:
+        return {'error': 'no username or id', 'status': 400}
+
+    username = payload.get('username')
+    user_id = payload.get('id')
+
+    user = db.get_by_username(username) or db.get_by_id(User, user_id)
+    if user is None:
+        return {'error': 'invalid id or username', 'status': 404}
+
     chats = db.get_chats_by_user(user)
     rooms = db.get_rooms_by_user(user)
 
@@ -247,9 +205,10 @@ def get_user_chats(sid: str, payload: dict) -> dict:
 
 
 @sio.on('get_chat')
-def get_chat(sid: str, payload: dict) -> dict:
+async def get_chat(sid: str, payload: dict) -> dict:
     """
-    fetches a chat from the database
+    fetches a chat from the database and reformats
+    the messages to be grouped by date
 
     :param sid: The socket id of the client
     :param payload: The payload sent by the client
@@ -267,16 +226,11 @@ def get_chat(sid: str, payload: dict) -> dict:
     for message in chat['messages']:
         when = message['when']
         when_date = datetime.fromisoformat(when).date().strftime('%Y-%m-%d')
-        found = False
         for day in messages:
             day_date = day[0]
             day_messages = day[1]
             if day_date == when_date:
                 day_messages.append(message)
-                found = True
-                break
-            if not found:
-                messages.append([when_date, [message]])
                 break
         else:
             messages.append([when_date, [message]])
@@ -284,3 +238,47 @@ def get_chat(sid: str, payload: dict) -> dict:
     chat['messages'] = messages
 
     return {'chat': chat, 'status': 200}
+
+
+@sio.on('new_message')
+async def new_message(sid: str, payload: dict) -> dict:
+    """
+    adds a message to a chat or room and emits
+    an event to all members of the room or chat
+    """
+    if not payload:
+        return {'error': 'invalid payload', 'status': 400}
+
+    chat_type = payload.get('type')
+    room_or_chat_id = payload.get('id')
+    message = payload.get('message')
+    if not chat_type or not room_or_chat_id or not message:
+        return {'error': 'invalid payload', 'status': 400}
+
+    if chat_type == 'room':
+        room_or_chat = db.get_by_id(Room, room_or_chat_id)
+    else:
+        room_or_chat = db.get_by_id(Chat, room_or_chat_id)
+
+    if room_or_chat is None:
+        return {'error': 'invalid chat or room id', 'status': 404}
+
+    if chat_type == 'room':
+        members = room_or_chat.members
+    elif chat_type == 'chat':
+        members = [room_or_chat.user_1, room_or_chat.user_2]
+
+    message = Message(**message)
+    message.when = datetime.fromisoformat(message.when)
+    if message.sender not in members:
+        return {'error': 'user not in chat or room', 'status': 403}
+
+    room_or_chat.update(add_to_set__messages=message)
+    room_or_chat.reload()
+    room_or_chat.save()
+
+    payload = {'message': message.to_dict(), 'id': str(room_or_chat.id)}
+    await sio.emit('new_message', payload,
+                   to=str(room_or_chat.id), skip_sid=sid)
+
+    return {'success': True, 'status': 201}

@@ -2,6 +2,7 @@
 """utility functions for auth"""
 import re
 
+
 def validate_email(email: str) -> bool:
     """validate email"""
     email_regex = re.compile(r"""^[a-z0-9!#$%&'*+/=?^_`{|}~-]+

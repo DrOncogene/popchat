@@ -5,7 +5,7 @@
 from datetime import datetime
 from mongoengine import (
     Document,
-    ReferenceField,
+    StringField,
     EmbeddedDocumentListField,
     EmbeddedDocumentField,
     QuerySet,
@@ -28,11 +28,10 @@ class Chat(Base, Document):
     :type messages:
     """
 
-    user_1 = ReferenceField('User')
-    user_2 = ReferenceField('User')
+    user_1 = StringField()
+    user_2 = StringField()
     messages = EmbeddedDocumentListField(Message)
     last_msg = EmbeddedDocumentField(Message)
-
 
     def to_dict(self) -> dict:
         """Create a serializable format of `Chat` object
@@ -42,8 +41,6 @@ class Chat(Base, Document):
         """
 
         obj_dict = super().to_dict()
-        obj_dict['user_1'] = self.user_1.username
-        obj_dict['user_2'] = self.user_2.username
 
         if self.messages:
             self.messages.sort(key=lambda a: a.when)
@@ -65,5 +62,5 @@ class Chat(Base, Document):
         """
 
         self.updated_at = datetime.utcnow()
-        self.last_msg = self.messages[-1] if self.messages else None
+        self.last_msg = self.messages[-1] if len(self.messages) > 0 else None
         return super().save(*args, **kwargs)

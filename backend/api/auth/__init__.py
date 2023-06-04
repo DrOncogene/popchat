@@ -9,4 +9,4 @@ auth_router = APIRouter(
     responses={401: {"description": "Not authenticated"}}
 )
 
-from .views import *
+from .views import *  # noqa E402
