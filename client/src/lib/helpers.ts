@@ -1,5 +1,10 @@
 import { get } from "svelte/store";
-import { state, user, activeChats, currentChat } from '../lib/store';
+import {
+  state,
+  user,
+  activeChats as chatsAndRoomsStore,
+  chatStore,
+  roomStore } from '../lib/store';
 import socket from "./socket";
 import DetailsView from "../components/DetailsView.svelte";
 
@@ -32,30 +37,48 @@ function changeState(page: string = 'login', chat: string = null, room: string =
 
 async function fetchUser() {
   const url = `${SERVER_URL}/api/auth/is_authenticated`;
-  const resp = await fetch(url, 
-      {
-        credentials: 'include',
-        mode: 'cors',
-    }).then(res => res)
+  try {
+    const resp = await fetch(url, 
+    {
+      credentials: 'include',
+      mode: 'cors',
+    }).then(res => res);
 
-  if (resp.status === 200) {
-    const userData: User = await resp.json();
-    return userData;
-  } else {
+    if (resp.status === 200) {
+      const userData: User = await resp.json();
+      return userData;
+    } else {
+      changeState('login');
+      return null;
+    }
+  } catch (err) {
     changeState('login');
     return null;
   }
+
 }
 
-async function fetchChat() {
-
+function fetchCurrentChatOrRoom () {
+  const chatId = get(state).chat;
+  const roomId = get(state).room;
+  if (chatId) {
+    socket.emit('get_chat', {id: chatId}, (payload) => {
+      if (payload.status !== 200) return;
+      chatStore.set(payload.chat);
+    });
+  } else if (roomId) {
+    socket.emit('get_room', {id: roomId}, (payload) => {
+      if (payload.status !== 200) return;
+      roomStore.set(payload.room);
+    });
+  }
 }
 
 function fetchUserChats() {
   const userId = get(user).id;
   socket.emit('get_user_chats', {id: userId}, (payload) => {
     if (payload.status !== 200) return;
-    activeChats.set(payload.all);
+    chatsAndRoomsStore.set(payload.all);
   });
 }
 
@@ -114,6 +137,7 @@ function showFormError(errorMsg: string, ...inputs: Input[]) {
       input.classList.add('outline');
       input.classList.add('outline-1');
       input.classList.add('outline-red-500');
+      input.blur();
     });
     return;
   }
@@ -137,7 +161,7 @@ function openChat(e: Event) {
   socket.emit('get_chat', {id: chatId}, (payload) => {
     if (payload.status !== 200) return;
 
-    currentChat.set(payload.chat);
+    chatStore.set(payload.chat);
     changeState('home', payload.chat.id);
   });
 }
@@ -147,15 +171,47 @@ function newChat(e: Event) {
 }
 
 function showDetails(e: Event, type: string = null) {
+  e.preventDefault();
 
+  const id = (<HTMLAnchorElement>e.target).parentElement.dataset.id;
+  const target = document.querySelector('.main-section .left');
+
+  if (type) {
+    const current = get(chatStore) ? get(chatStore) : get(roomStore);
+    if (type === 'chat') current.type = 'chat';
+    else current.type = 'room';
+
+    const detailPopup = new DetailsView({
+      target: target,
+      props: {
+        details: current
+      }
+    });
+    return;
+  }
+  socket.emit('get_user', { id: id }, (payload) => {
+    if (payload.status !== 200) return;
+
+    const detailPopup = new DetailsView({
+      target: target,
+      props: {
+        details: payload.user
+      }
+    });
+  });
 }
 
 function closeDetails(e: Event) {
+  e.preventDefault();
 
+  const detailPopup = document.querySelector('#details-popup');
+  detailPopup.remove();
 }
 
-function toggleWidget(e: Event) {
+function toggleRoomWidget(e: Event) {
+  e.preventDefault();
 
+  document.querySelector('#new-room-widget').classList.toggle('hidden');
 }
 
 function formatDate(date: string, time = false) {
@@ -163,18 +219,92 @@ function formatDate(date: string, time = false) {
     weekday: 'short',
     day: 'numeric',
     month: 'short',
-    year: 'numeric'
+    year: 'numeric',
+    
   });
   const d = new Date(date);
   if (time) {
-    return `${d.toLocaleTimeString(undefined, {timeStyle: 'short'})}`;
+    return d.toLocaleTimeString(undefined, {timeStyle: 'short'});
   }
 
   return f.format(d);
 }
 
 function sendMessage(e: SubmitEvent) {
+  e.preventDefault();
 
+  let current = get(chatStore) ? get(chatStore) : get(roomStore);
+  const when = new Date().toISOString();
+  const textInput = <HTMLInputElement>document.querySelector('#chat-input');
+
+  const message = {
+    sender: get(user).username,
+    text: textInput.value,
+    when: when,
+  };
+
+  const payload = {
+    type: get(chatStore) ? 'chat': 'room',
+    id: current.id,
+    message: message 
+  };
+  socket.emit('new_message', payload, (data) => {
+    if (data.status !== 201) return;
+
+    current = addMessageToChat(current, message);
+    if (get(chatStore)) {
+      // @ts-ignore
+      chatStore.set(current);
+    } else {
+      // @ts-ignore
+      roomStore.set(current);
+    }
+
+    updateChatList(current.id, message);
+    textInput.value = '';
+  });
+}
+
+function addMessageToChat (chat: Chat | Room, message: Message) {
+  let found = false;
+  const date = message.when.split('T')[0];
+
+  for (const dayMessage of chat.messages) {
+    if (dayMessage[0] === date) {
+      dayMessage[1].push(message);
+      found = true;
+      break;
+    }
+  }
+
+  if (!found) {
+    chat.messages.push([date, [message]]);
+  }
+
+  chat.last_msg = message;
+
+  return chat;
+}
+
+function updateChatList (chatId: string, message: Message) {
+  const chatsAndRooms = get(chatsAndRoomsStore);
+  const chatToUpdate = chatsAndRooms.find((chat) => {
+    if (chat.id === chatId) return true;
+  });
+
+  chatToUpdate.last_msg = message;
+  chatsAndRooms.forEach((chat) => {
+    if (chat.id === chatId) return chatToUpdate;
+    else return chat;
+  });
+
+  chatsAndRooms.sort((a, b) => {
+    const aDate = new Date(a.last_msg.when);
+    const bDate = new Date(b.last_msg.when);
+    // @ts-ignore
+    return aDate - bDate;
+  });
+  chatsAndRoomsStore.set(chatsAndRooms);
 }
 
 export {
@@ -184,7 +314,7 @@ export {
   changeState,
   fetchUser,
   fetchUserChats,
-  fetchChat,
+  fetchCurrentChatOrRoom,
   logout,
   validateInput,
   showFormError,
@@ -192,7 +322,9 @@ export {
   closeDetails,
   openChat,
   newChat,
-  toggleWidget,
+  toggleRoomWidget,
   formatDate,
   sendMessage,
+  addMessageToChat,
+  updateChatList,
 };
