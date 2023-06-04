@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { currentChat, currentRoom } from '../lib/store';
+  import { chatStore, roomStore } from '../lib/store';
   import { sendMessage } from '../lib/helpers';
   import Send from 'svelte-material-icons/Send.svelte';
   import FormInput from './FormInput.svelte';
@@ -9,11 +9,11 @@
 
 <ChatHeader />
 <div class="w-full min-h-[50vh] flex flex-col justify-center items-center">
-  {#if $currentRoom || $currentChat}
+  {#if $roomStore || $chatStore}
     <MessageList />
   {/if}
 </div>
-{#if $currentRoom || $currentChat}  
+{#if $roomStore || $chatStore}  
 <form on:submit={sendMessage} action="#" class="absolute bottom-0 left-0 min-h-[65px] w-full bg-dark-sec px-3 py-3 flex space-x-3 justify-center items-center" id="new-msg-form">
   <FormInput
     placeholder='Enter a message'

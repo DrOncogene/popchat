@@ -1,16 +1,15 @@
 <script lang="ts">
-  import { user, currentChat, currentRoom, state } from "../lib/store";
+  import { user, chatStore, roomStore, state } from "../lib/store";
   import { formatDate } from "../lib/helpers";
   import { slide } from "svelte/transition";
 
-  let messages: Message[] = [];
+  let messages: DayMessages[] = [];
 
   $: {
-    if ($currentChat && $currentChat.messages.length > 0) {
-      messages = $currentChat.messages;
-      console.log(messages)
-    } else if ($currentRoom && $currentRoom.messages.length > 0) {
-      messages = $currentRoom.messages;
+    if ($chatStore && $chatStore.messages.length > 0) {
+      messages = $chatStore.messages;
+    } else if ($roomStore && $roomStore.messages.length > 0) {
+      messages = $roomStore.messages;
     } else {
       messages = [];
     }
@@ -34,7 +33,7 @@
         {:else}
           <li class="received w-full flex flex-col items-start space-y-1 my-2 self-start px-2">
             <p class="max-w-[60%] p-4 flex justify-center items-center bg-dark-sec rounded-2xl rounded-tl-none text-sm whitespace-pre-line">{message.text}</p>
-            <div class="text-[10px] italic font-thin text-right ml-4">
+            <div class="text-[10px] italic font-thin text-right ml-4 whitespace-nowrap text-ellipsis">
               <span class="mr-2">{time}</span>
               <span class="">{message.sender}</span>
             </div>

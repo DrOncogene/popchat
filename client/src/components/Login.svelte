@@ -50,6 +50,7 @@
         .classList.toggle('hidden');
       setTimeout(() => {
         user.set(payload);
+        socket.auth = {id: $user.id};
         socket.connect();
         changeState('home');
       }, 1000);

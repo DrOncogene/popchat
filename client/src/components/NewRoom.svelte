@@ -2,15 +2,15 @@
   import FormInput from './FormInput.svelte';
   import Close from 'svelte-material-icons/Close.svelte';
   import Button from './Button.svelte';
-  import { showFormError, toggleWidget } from '../lib/helpers';
-  import { user, state, currentRoom } from '../lib/store';
+  import { showFormError, toggleRoomWidget } from '../lib/helpers';
+  import { user, state, roomStore, activeChats as chatsAndRooms } from '../lib/store';
   import socket from '../lib/socket';
 
   function createRoom(e: SubmitEvent) {
     e.preventDefault();
 
-    const nameInput: HTMLInputElement = document.querySelector('#room-name');
-    const memberInput: HTMLInputElement = document.querySelector('#new-member');
+    const nameInput = <HTMLInputElement>document.querySelector('#room-name');
+    const memberInput = <HTMLInputElement>document.querySelector('#new-member');
 
     const payload = {
       member: memberInput.value.trim(),
@@ -28,21 +28,21 @@
       socket.emit('get_user', $user.id, (payload: User) => {
         user.set(payload);
       });
-      const newRoom: Chat = payload.room;
-      for (let chat of $user.all_chats) {
+      const newRoom: Room = payload.room;
+      for (let chat of $chatsAndRooms) {
         if (chat.id !== newRoom.id) continue;
-        $state.room = chat;
+        $state.room = chat.id;
         break;
       }
-      $currentRoom = newRoom;
+      roomStore.set(newRoom);
     });
-    toggleWidget(e);
+    toggleRoomWidget(e);
   }
 </script>
 
 <div class="hidden absolute right-8 bottom-8 min-h-[200px] p-4 bg-pri-900 shadow-lg shadow-black transition-all duration-700" id="new-room-widget">
   <form on:submit={e => createRoom(e)} class="relative flex flex-col justify-center items-center">
-    <a on:click={e => toggleWidget(e)} href="/" class="absolute -right-2 -top-2"><Close /></a>
+    <a on:click={e => toggleRoomWidget(e)} href="/" class="absolute -right-2 -top-2"><Close /></a>
     <p class="invisible text-xs text-center w-full text-red-500" id="form-errors">An error</p>
     <FormInput
       name='room-name'

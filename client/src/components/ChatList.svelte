@@ -1,22 +1,19 @@
 <script lang="ts">
-  import { user, currentRoom, currentChat } from "../lib/store";
+  import { user, roomStore, chatStore } from "../lib/store";
   import ProfileImage from './ProfileImage.svelte';
   import { openChat } from "../lib/helpers";
 
-  export let activeChats: (Chat | Room)[]; // active chats
+  export let activeChats; // active chats
 </script>
 
-{#key $currentChat || $currentRoom}
+{#key $chatStore || $roomStore}
 <ul class="flex flex-col  w-full overflow-x-hidden overflow-y-auto" id="chat-list">
 {#each activeChats as chat}
-{@const current = $currentChat ? $currentChat : $currentRoom}
+{@const current = $chatStore ? $chatStore : $roomStore}
 {@const selected = current && chat.id === current.id ? 'bg-sec-700' : ''}
 {#if chat.type === 'room'}
   <li on:click={ openChat } on:keypress={ openChat } data-type="{chat.type}" data-id="{chat.id}" class="flex items-center space-x-2 py-2 px-6 mb-0.5 cursor-pointer hover:bg-sec-700 overflow-x-hidden transition-all duration-250 {selected}">
-    <ProfileImage
-      type={chat.type}
-      isDetail={true}
-    />
+    <ProfileImage />
     <div class="flex flex-col overflow-hidden">
       <h6 class="text-base font-semibold overflow-hiddenmax-w-[250px] text-ellipsis whitespace-nowrap overflow-hidden">{chat.name}</h6>
       {#if chat.last_msg && chat.last_msg.sender === $user.username}
@@ -29,11 +26,7 @@
   {:else}
   {@const user2 = chat.user_1 === $user.username ? chat.user_2 : chat.user_1 }
   <li on:click={(e) => openChat(e)} on:keypress={(e) => openChat(e)} data-type="{chat.type}" data-id="{chat.id}" class="flex items-center space-x-2 py-2 px-6 mb-0.5 cursor-pointer hover:bg-sec-700 focus:bg-sec-700 overflow-x-hidden transition-all duration-250 {selected}">
-    <ProfileImage
-      type={chat.type}
-      isDetail={true}
-      username={user2}
-    />
+    <ProfileImage />
     <div class="flex flex-col overflow-hidden">
       <h6 class="text-base font-semibold overflow-hiddenmax-w-[250px] text-ellipsis whitespace-nowrap overflow-hidden">@{user2}</h6>
       {#if chat.last_msg}

@@ -15,6 +15,7 @@
     const userData = await fetchUser();
     user.set(userData);
     if ($user) {
+      socket.auth = {id: $user.id};
       socket.connect();
     }
   });
