@@ -7,15 +7,13 @@ const state: Writable<State> = writable(null);
 
 const activeChats: Writable<(Chat | Room)[]> = writable([]);
 
-const currentChat: Writable<Chat> = writable(null);
-const currentRoom: Writable<Room> = writable(null);
-const currentDetail: Writable<User | Chat | Room> = writable(null);
+const chatStore: Writable<Chat> = writable(null);
+const roomStore: Writable<Room> = writable(null);
 
 export {
   user,
   state,
   activeChats,
-  currentChat,
-  currentDetail,
-  currentRoom
+  chatStore,
+  roomStore
 };
