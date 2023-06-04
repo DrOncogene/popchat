@@ -20,6 +20,8 @@ type Message = {
   text: string;
 }
 
+type DayMessages = [day: string, messages: Message[]]
+
 type Chat = {
   id: string;
   name: string;
@@ -27,11 +29,7 @@ type Chat = {
   type: string;
   user_1: string,
   user_2: string;
-  messages: Message[];
-  // members?: string[];
-  // admins?: string[];
-  // created_by?: string;
-  // updated_at?: string;
+  messages: DayMessages[];
 }
 
 type Room = {
@@ -39,7 +37,7 @@ type Room = {
   name: string;
   last_msg: Message;
   type: string;
-  messages: Message[];
+  messages: DayMessages[];
   members: string[];
   admins: string[];
   created_by: string;
@@ -48,9 +46,6 @@ type Room = {
 
 interface User {
   username: string;
-  // chats: Array<Chat>;
-  // rooms: Array<Chat>;
-  // all_chats: Array<Chat | Room>;
   id: string;
   email: string;
 }
