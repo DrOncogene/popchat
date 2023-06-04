@@ -49,7 +49,6 @@ class User(Base, Document):
         """
 
         obj_dict = super().to_dict()
-        del obj_dict['password']
 
         return obj_dict
 

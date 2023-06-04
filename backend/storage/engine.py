@@ -7,6 +7,7 @@ Defines the storage engine.
 from os import getenv
 from typing import Type
 from mongoengine import connect
+from mongoengine.queryset.visitor import Q
 from models.user import User
 from models.chat import Chat
 from models.room import Room
@@ -30,27 +31,37 @@ class Engine:
     def load(self):
         connect('popchat')
 
-    def get_by_id(self, model: Type[T], id: str) -> T:
+    def get_by_id(self, model: Type[T], id: str) -> T | None:
         """Fetches a document by id"""
 
         return model.objects(id=id).first()
 
-    def get_by_username(self, username: str) -> User:
-        """Fetches a `User` by username"""
+    def get_by_username(self, name: str) -> User | None:
+        """fetches a user by username"""
+        return User.objects(username=name).first()
 
-        return User.objects(username=username).first()
-
-    def get_by_email(self, email: str) -> User:
-        """Fetches a `User` by email"""
-
+    def get_by_email(self, email: str) -> User | None:
+        """fetches a user by email"""
         return User.objects(email=email).first()
 
-    def get_by_auth_token(self, auth_token: str) -> User:
-        """Fetches a `User` by authentication token"""
+    def get_by_auth_token(self, token: str) -> User | None:
+        """fetches a user by auth token"""
+        return User.objects(auth_token=token).first()
 
-        return User.objects(auth_token=auth_token).first()
+    def get_by_reset_token(self, token: str) -> User | None:
+        """fetches a user by reset token"""
+        return User.objects(reset_token=token).first()
 
-    def get_by_reset_token(self, reset_token: str) -> User:
-        """Fetches a user by reset token"""
+    def get_chats_by_user(self, user: User) -> list[Chat | Room]:
+        """
+        fetches all active chats and rooms for a user
 
-        return User.objects(reset_token=reset_token).first()
+        """
+        return Chat.objects(Q(user_1=user) | Q(user_2=user)).exclude('messages')
+
+    def get_rooms_by_user(self, user: User) -> list[Chat | Room]:
+        """
+        fetches all active chats and rooms for a user
+
+        """
+        return Room.objects(members__in=[user]).exclude('messages', 'members')

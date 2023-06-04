@@ -1,14 +1,11 @@
 #!/usr/bin/env python3
-
 """Defines the Message model"""
 
 from mongoengine import (
     EmbeddedDocument,
     StringField,
     DateTimeField,
-    ReferenceField
 )
-from models.user import User
 
 
 class Message(EmbeddedDocument):
@@ -25,8 +22,8 @@ class Message(EmbeddedDocument):
     """
 
     text = StringField(required=True)
-    sender = ReferenceField(User, required=True)
-    time_sent = DateTimeField(required=True)
+    sender = StringField(required=True)
+    when = DateTimeField(required=True)
 
     def to_dict(self) -> dict:
         """Create a serializable format of Model object
@@ -38,5 +35,5 @@ class Message(EmbeddedDocument):
         return {
             'text': self.text,
             'sender': self.sender,
-            'time_sent': self.time_sent.isoformat()
+            'when': self.when.isoformat()
         }

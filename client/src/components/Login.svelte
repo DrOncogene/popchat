@@ -1,11 +1,12 @@
 <script lang="ts">
   import { slide } from 'svelte/transition';
-  import { auth, state, user } from '../lib/store';
+  import { state, user } from '../lib/store';
   import socket from '../lib/socket';
   import {
     validateInput,
-    displayFormError,
-    changeState
+    showFormError,
+    changeState,
+    SERVER_URL
   } from '../lib/helpers';
   import Button from './Button.svelte';
   import FormInput from './FormInput.svelte';
@@ -13,8 +14,10 @@
   const login = async (e) => {
     e.preventDefault();
 
-    const userInput: HTMLInputElement = document.querySelector('#username');
-    const passInput: HTMLInputElement = document.querySelector('#password');
+    const userInput: HTMLInputElement =
+      document.querySelector('#username');
+    const passInput: HTMLInputElement =
+      document.querySelector('#password');
     const username = userInput.value;
     const password = passInput.value;
 
@@ -22,37 +25,37 @@
       return;
     }
 
-    const url = `${import.meta.env.VITE_SERVER_URL}/auth/login`;
+    const url = `${SERVER_URL}/api/auth/login`;
     try {
       const response = await fetch(url, {
         method: 'POST',
         mode: 'cors',
-        credentials: 'same-origin',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           username: username,
           password: password
         })
       });
-      const payload = await response.json();
       if (!response.ok) {
-        displayFormError('Invalid username or password', userInput, passInput);
+        showFormError('Invalid username or password');
         return;
       }
+
+      const payload = await response.json();
       document.querySelector('#loader').classList.remove('hidden');
       document.querySelector('#loader').classList.add('flex');
       document
         .querySelector('#login-form h1, #login-form form')
         .classList.toggle('hidden');
       setTimeout(() => {
-        user.set(payload.user);
-        // $auth.token = payload.auth;
-        // localStorage.setItem('popchat_alx_t', $auth.token);
-        changeState('home');
+        user.set(payload);
         socket.connect();
+        changeState('home');
       }, 1000);
     } catch (error) {
-      displayFormError('Server error, try again later');
+      console.log(error);
+      showFormError(`Server error, try again later`);
     }
   };
 

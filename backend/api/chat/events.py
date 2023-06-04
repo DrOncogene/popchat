@@ -6,10 +6,12 @@ module for generating sockeio envent handlers
 
 # from flask_socketio import join_room, emit
 
-# from backend.api import sio
-# from models.chat import Chat
+from datetime import datetime
+from api.sockets import sio
+from storage import db
+from models.user import User
+from models.chat import Chat
 # from models.room import Room
-# from storage import db
 # from .background_tasks import put_user, add_message
 
 
@@ -177,13 +179,103 @@ module for generating sockeio envent handlers
 #         sio.on_event('message', handle_chat)
 
 
-# @sio.on('connect')
-# def handle_connect(auth):
-#     """
-#     handles the connection event
+@sio.on('connect')
+async def handle_connect(sid, msg):
+    """
+    handles the connection event
 
-#     :param auth: Authentication dict
-#         passed by the client
-#     """
-#     # load_handlers(payload.get('user'))
-#     print('connected', auth.get('token'))
+    :param auth: Authentication dict
+        passed by the client
+    """
+    # load_handlers(payload.get('user'))
+    print('CONNECTED')
+
+
+@sio.on('disconnect')
+def handle_disconnect(sid):
+    """
+    handles the disconnection event
+
+    :param sid: The socket id of the client
+    """
+    print('DISCONNECTED')
+
+
+@sio.on('get_user')
+def get_user(sid: str, payload: dict) -> dict:
+    """fetches a user from the database"""
+
+    if not payload or len(payload) == 0:
+        return {'error': 'no username or id', 'status': 400}
+
+    username = payload.get('username')
+    user_id = payload.get('id')
+
+    user = db.get_by_username(username) or db.get_by_id(user_id)
+    if user is None:
+        return {'error': 'invalid id or username', 'status': 404}
+
+    return {'user': user.to_dict(), 'status': 200}
+
+
+@sio.on('get_user_chats')
+def get_user_chats(sid: str, payload: dict) -> dict:
+    """
+    fetches all active chats and rooms for a user
+
+    :param sid: The socket id of the client
+    :param payload: The payload sent by the client
+    """
+    
+    if not payload or len(payload) == 0:
+        return {'error': 'no username or id', 'status': 400}
+
+    username = payload.get('username')
+    user_id = payload.get('id')
+
+    user = db.get_by_username(username) or db.get_by_id(User, user_id)
+    if user is None:
+        return {'error': 'invalid id or username', 'status': 404}
+    
+    chats = db.get_chats_by_user(user)
+    rooms = db.get_rooms_by_user(user)
+
+    rooms_chats = sorted([*chats, *rooms], key=lambda a: a.updated_at)
+    rooms_chats = [chat.to_dict() for chat in rooms_chats]
+
+    return {'all': rooms_chats, 'status': 200}
+
+
+@sio.on('get_chat')
+def get_chat(sid: str, payload: dict) -> dict:
+    """
+    fetches a chat from the database
+
+    :param sid: The socket id of the client
+    :param payload: The payload sent by the client
+    """
+    if not payload or len(payload) == 0:
+        return {'error': 'no chat id', 'status': 400}
+
+    chat_id = payload.get('id')
+    chat = db.get_by_id(Chat, chat_id)
+    if chat is None:
+        return {'error': 'invalid chat id', 'status': 404}
+
+    chat = chat.to_dict()
+    messages = []
+    for message in chat['messages']:
+        when = message['when']
+        when_date = datetime.fromisoformat(when).date().strftime('%Y-%m-%d')
+        for day in messages:
+            day_date = day[0]
+            day_messages = day[1]
+            if day_date == when_date:
+                day_messages.append(message)
+                break
+        else:
+            messages.append([when_date, [message]])
+
+    chat['messages'] = messages
+
+    return {'chat': chat, 'status': 200}

@@ -2,7 +2,7 @@
   import FormInput from './FormInput.svelte';
   import Close from 'svelte-material-icons/Close.svelte';
   import Button from './Button.svelte';
-  import { displayFormError, toggleWidget } from '../lib/helpers';
+  import { showFormError, toggleWidget } from '../lib/helpers';
   import { user, state, currentRoom } from '../lib/store';
   import socket from '../lib/socket';
 
@@ -22,7 +22,7 @@
 
     socket.emit('create_room', payload, (payload) => {
       if (payload.status !== 201) {
-        displayFormError('User does not exist', memberInput);
+        showFormError('User does not exist', memberInput);
         return;
       }
       socket.emit('get_user', $user.id, (payload: User) => {

@@ -19,7 +19,7 @@
     </a>
   </div>
   {:else if $currentChat}
-  {@const members = $currentChat.members}
+  {@const members = [$currentChat.user_1, $currentChat.user_2]}
   {@const user2 = members[0] === $user.username ? members[1] : members[0]}
   <div data-id="{user2}" class="w-full flex flex-nowrap items-center">
     <ProfileImage isDetail={true} />
