@@ -575,6 +575,52 @@ async def delete_user(sid: str, payload: dict) -> dict:
 
     return {'success': True, 'status': 201}
 
+@sio.on('delete_chat')
+async def delete_chat(sid: str, payload: dict) -> dict:
+    """
+    delete_chat(chat_id): delete a chat for the current user by removing the current user from the chat, leaving the chat with one user
+
+    payload: {id: string, user_id: string}
+
+    return: {success: True, status: 201}, else {error: string, status: int}
+    """
+    if not payload or len(payload) == 0:
+        return {
+            'error': 'Empty payload',
+            'status': 400
+        }
+
+    chat_id = payload.get('id')
+    user_id = payload.get('user_id')
+    if not chat_id or not user_id:
+        return {
+            'error': 'Invalid payload',
+            'status': 400
+        }
+
+    chat_in_db = db.get_by_id(Chat, chat_id)
+    if not chat_in_db:
+        return {
+            'error': 'No Chat found',
+            'status': 404
+        }
+
+    user_in_db = db.get_by_id(User, user_id)
+    if not user_in_db:
+        return {
+            'error': 'No User found',
+            'status': 404
+        }
+
+    if chat_in_db.user_1 == user_id:
+        del chat_in_db.user_1
+        chat_in_db.save()
+    else:
+        del chat_in_db.user_2
+        chat_in_db.save()
+
+    return {'success': True, 'status': 201}
+
 # @sio.on('edit_user')
 # def edit_user(payload: dict):
 #     """deletes or edit a user"""
