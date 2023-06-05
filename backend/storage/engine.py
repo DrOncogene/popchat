@@ -60,8 +60,6 @@ class Engine:
         """fetches a user by reset token"""
         return User.objects(reset_token=token).first()
 
-    def get_chats_by_user(self, user: User) -> list[Chat | Room]:
-
     def get_chats_by_user(self, user: User) -> list[Chat]:
         """
         fetches all active chats and rooms for a user
