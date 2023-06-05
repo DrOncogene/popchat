@@ -40,7 +40,6 @@ async def register(user: UserIn) -> JSONResponse:
         raise HTTPException(status_code=500, detail='Error creating user')
 
     return JSONResponse({"message": "login success"}, 201)
-    
 
 
 @auth_router.post('/login')
@@ -52,7 +51,7 @@ async def login(
     login_id = user.username or user.email
     if not login_id:
         raise HTTPException(status_code=400,
-                             detail="username or email required")
+                            detail="username or email required")
 
     if user.username:
         the_user = db.get_by_username(login_id)
@@ -98,7 +97,9 @@ def is_authenticated(
 
 
 @auth_router.get('/logout')
-async def logout(token: Annotated[str, Cookie(alias='_popchat_auth')]) -> JSONResponse:
+async def logout(
+    token: Annotated[str, Cookie(alias='_popchat_auth')]
+) -> JSONResponse:
     user = db.get_by_auth_token(token)
     if not user:
         return HTTPException(status_code=401, detail='Invalid token')
@@ -124,5 +125,8 @@ async def get_reset_token(email: str, response: JSONResponse) -> JSONResponse:
 
 
 @auth_router.post('/reset_password/{reset_token}}')
-async def reset_password(reset_token: str, new_password: Annotated[str, Form()]):
+async def reset_password(
+    reset_token: str,
+    new_password: Annotated[str, Form()]
+):
     pass
