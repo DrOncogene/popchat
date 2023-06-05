@@ -221,6 +221,85 @@ async def new_message(sid: str, payload: dict) -> dict:
 
     return {'success': True, 'status': 201}
 
+@sio.on('create_room')
+async def create_room(sid: str, payload: dict) -> dict:
+    """
+    create_room(creator_id, name, participant_id): creates a new room object, adding creator_id to admins property and named as passed and adding one mandatory participant to the room in addition to the creator
+
+    payload: {creator: id (string), name: string, member: id(string)}
+
+    returns: {room: room object, status: 200}, else {error: string, status: int}
+    """
+
+    if not payload or len(payload) == 0:
+        return {
+            'error': 'Empty payload',
+            'status': 400
+        }
+
+    creator_id = payload.get('creator')
+    room_name = payload.get('name')
+    member_id = payload.get('members')
+    if not creator_id or not room_name or not member_id:
+        return {
+            'error': 'Invalid payload',
+            'status': 400
+        }
+
+    room = Room(**payload)
+    room.save()
+
+    return {
+        'room': room.to_dict(),
+        'status': 200
+    }
+
+@sio.on('create chat')
+async def create_chat(sid: str, payload: dict) -> dict:
+    """
+    create_chat(user_1_id, user_2_id, message): creates a new chat object using
+      the two participants' id after verifying their existence in the db. add
+      message to the chat's messages property as the first message
+
+    payload: {user_1: username(string), user_2: string, message: Message}
+
+    returns: {chat: chat object, status: 200}, else {error: string, status: int}
+    """
+    if not payload or len(payload) == 0:
+        return {
+            'error': 'Empty payload',
+            'status': 400
+        }
+
+    user_1, user_2 = payload.get('user_1'), payload.get('user_2')
+    message = payload.get('message')
+    if not user_1 or not user_2 or not message:
+        return {
+            'error': 'Invalid payload',
+            'status': 400
+        }
+
+    user1_in_db = db.get_by_username(user_1)
+    if not user1_in_db:
+        return {
+            'error': 'user_1 not found',
+            'status': 404
+        }
+    user2_in_db = db.get_by_username(user_2)
+    if not user2_in_db:
+        return {
+            'error': 'user_2 not found',
+            'status': 404
+        }
+
+    chat = Chat(**payload, last_message=message)
+    chat.save()
+
+    return {
+        'chat': chat.to_dict(),
+        'status': 200j
+    }
+
 # @sio.on('edit_user')
 # def edit_user(payload: dict):
 #     """deletes or edit a user"""
