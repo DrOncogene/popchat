@@ -417,7 +417,49 @@ async def add_message(sid: str, payload: dict) -> dict:
             'success': True,
             'status': 201,
         }
+@sio.on('update_room_name')
+async def update_room_name(sid: str, payload: dict) -> dict:
+    """
+    update_room_name(room_id, new_name, admin_id): change the name of a room making sure the user passed is an admin of the room
 
+    payload: {id: string, new_name: string, updater: id}
+
+    return: {success: True, status: 201}, else {error: string, status: int}
+    """
+    if not payload or len(payload) == 0:
+        return {
+            'error': 'Empty payload',
+            'status': 400
+        }
+
+    room_id = payload.get('id')
+    new_name = payload.get('new_name')
+    admin_id = payload.get('updater')
+    if not room_id or not new_name or not admin_id:
+        return {
+            'error': 'Invalid payload',
+            'status': 400
+        }
+
+    room_in_db = db.get_by_id(Room, room_id)
+    if not room_in_db:
+        return {
+            'error': 'No Room found',
+            'status': 404
+        }
+
+    if admin_id not in room_in_db.admins:
+        return {
+            'error': 'User not admin',
+            'status': 400
+        }
+
+    room_in_db.name = new_name
+    room_in_db.save()
+    return {
+        'success': True,
+        'status': 201
+    }
 
 
 
