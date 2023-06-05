@@ -300,6 +300,49 @@ async def create_chat(sid: str, payload: dict) -> dict:
         'status': 200j
     }
 
+@sio.on('update_user')
+def update_user_info(sid: str, payload: dict):
+    """
+    update_user(user_obj): updates a user's email or username using the user object passed. The passed object id must be the same as the existing user's id. This route does not change the password.
+
+    payload: {user: User}
+
+    return {success: True, status: 201, user: updated obj}, else {error: string, status: int}
+    """
+    if not payload or len(payload) == 0:
+        return {
+            'error': 'Empty payload',
+            'status': 400
+        }
+
+    user_in_payload = payload.get('user')
+    if not user_in_payload:
+        return {
+            'error': 'User object missing',
+            'status': 400
+        }
+
+    user_in_db = db.get_by_id(User, user_in_payload.id)
+    if not user_in_db:
+        return {
+            'error': 'No user found',
+            'status': 400
+        }
+
+    user_in_db.username = user_in_payload.username
+    user_in_db.email = user_in_payload.email
+    user_in_db.save()
+
+    return {
+        'status': 201,
+        'success': True,
+        'user': user_in_db,
+    }
+
+
+
+
+
 # @sio.on('edit_user')
 # def edit_user(payload: dict):
 #     """deletes or edit a user"""
