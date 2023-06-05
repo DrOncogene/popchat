@@ -661,8 +661,49 @@ async def delete_room(sid: str, payload: dict) -> dict:
 
     return {'success': True, 'status': 201}
 
+# FIXME: payload must include user_id if author of message is to be verified
+@sio.on('delete_message')
+async def delete_message(sid: str, payload: dict) -> dict:
+    """
+    delete_message(message_id, chat_id/room_id): delete a message from a room or chat after verifying its existence in the room/chat and that the current user is the author.
 
+    payload{message_id: id (string), chat_or_room_id: id (string)}
 
+    return: {success: True, status: 201}, else {error: string, status: int}
+    """
+    if not payload or len(payload) == 0:
+        return {
+            'error': 'Empty payload',
+            'status': 400
+        }
+
+    message_id = payload.get('message_id')
+    chat_or_room_id = payload.get('chat_or_room_id')
+    if not message_id or not chat_or_room_id:
+        return {
+            'error': 'Invalid Payload',
+            'status': 400
+        }
+
+    chat_or_room = db.get_by_id(Room, chat_or_room_id) or \
+                    db.get_by_id(Chat, chat_or_room_id)
+    if not chat_or_room:
+        return {
+            'error': 'No Chat or Room found',
+            'status': 404
+        }
+
+    messgs_by_id = [message.id  for message in chat_or_room.messages]
+    if message_id not in messgs_by_id:
+        return {
+            'error': 'No Message found',
+            'status': 404
+        }
+
+    message_index = messgs_by_id.index(message_id)
+    chat_or_room.messages.pop(message_index)
+
+    return {'success': True, 'status': 201}
 
 
 # @sio.on('edit_user')
