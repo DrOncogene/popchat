@@ -15,6 +15,9 @@ from models.room import Room
 from models.message import Message
 # from .background_tasks import put_user, add_message
 
+CREATE_ADMIN = 10
+DELETE_ADMIN = 20
+
 @sio.on('connect')
 async def connect(sid: str, environ: dict, auth: dict) -> bool:
     """
@@ -247,6 +250,8 @@ async def create_room(sid: str, payload: dict) -> dict:
         }
 
     room = Room(**payload)
+    room.members.append(creator_id)
+    room.admins.append(creator_id)
     room.save()
 
     return {
@@ -301,7 +306,7 @@ async def create_chat(sid: str, payload: dict) -> dict:
     }
 
 @sio.on('update_user')
-def update_user_info(sid: str, payload: dict):
+async def update_user_info(sid: str, payload: dict) -> dict:
     """
     update_user(user_obj): updates a user's email or username using the user object passed. The passed object id must be the same as the existing user's id. This route does not change the password.
 
@@ -338,6 +343,81 @@ def update_user_info(sid: str, payload: dict):
         'success': True,
         'user': user_in_db,
     }
+
+@sio.on('add_message')
+async def add_message(sid: str, payload: dict) -> dict:
+    """
+    add_message(chat_id/room_id, message): add a new message to a chat or room after verifying that the message.sender exist in the db and is a participant in the room or chat
+
+    payload: {type:'room' | 'chat', id: room_id or chat_id, message: Message}
+
+    return: {success: True, status: 201}, else {error: string, status: int}
+    """
+    if not payload or len(payload) == 0:
+        return {
+            'error': 'Empty payload',
+            'status': 400
+        }
+
+    chat_type = payload.get('type')
+    chat_or_room_id = payload.get('id')
+    message = payload.get('message')
+    if not chat_type or not chat_or_room_id or not message:
+        return {
+            'error': 'Invalid payload',
+            'status': 400
+        }
+
+    if chat_type == 'chat':
+        chat = db.get_by_id(Chat, chat_or_room_id)
+    else:
+        room = db.get_by_id(Room, chat_or_room_id)
+
+    if not room:
+        return {
+            'error': 'No Room found',
+            'status': 404
+        }
+    if not chat:
+        return {
+            'error': 'No Chat found',
+            'status': 404
+        }
+
+    sender_in_db = db.get_by_id(User, message.sender)
+    if not sender_in_db:
+        return {
+            'error': 'No user found',
+            'status': 404
+        }
+
+    if room:
+        if message.sender not in room.members:
+            return {
+                'error': 'Sender not participant in Room',
+                'status': 400
+            }
+        room.messages.append(message)
+        room.last_msg = message
+        room.save()
+        return {
+            'success': True,
+            'status': 201,
+        }
+    else:
+        if message.sender != chat.user_1 and message.sender != chat.user_2:
+            return {
+                'error': 'Sender not participant in Chat',
+                'status': 400
+            }
+        chat.messages.append(message)
+        chat.last_msg = message
+        chat.save()
+        return {
+            'success': True,
+            'status': 201,
+        }
+
 
 
 
