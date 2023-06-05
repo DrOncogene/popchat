@@ -259,7 +259,7 @@ async def create_room(sid: str, payload: dict) -> dict:
         'status': 200
     }
 
-@sio.on('create chat')
+@sio.on('create_chat')
 async def create_chat(sid: str, payload: dict) -> dict:
     """
     create_chat(user_1_id, user_2_id, message): creates a new chat object using
@@ -516,7 +516,64 @@ async def update_room_admins(sid: str, payload: dict) -> dict:
             'status': 400,
         }
 
+# TODO: This should probably be in the HTTP part of server?
+@sio.on('delete_user')
+async def delete_user(sid: str, payload: dict) -> dict:
+    """
+    delete_user(user_id, password): delete a user from the db and remove them from all rooms and chats they belong to. This is meant for users to delete their account.
 
+    payload: {id: string, password: string}
+
+    return: {success: True, status: 201}, else {error: string, status: int}
+    """
+
+    if not payload or len(payload) == 0:
+        return {
+            'error': 'Empty payload',
+            'status': 400
+        }
+
+    user_id = payload.get('id')
+    password = payload.get('password')
+    if not user_id or not password:
+        return {
+            'error': 'Invalid payload',
+            'status': 400
+        }
+
+    user_in_db = db.get_by_id(User, user_id)
+    if not user_in_db:
+        return {
+            'error': 'No User found',
+            'status': 404
+        }
+
+    if not user_in_db.validate_password(password):
+        return {
+            'error': 'Wrong password',
+            'status': 401
+        }
+
+    user_rooms = db.get_rooms_by_user(user_in_db)
+    user_chats = db.get_chats_by_user(user_in_db)
+
+    for room in user_rooms:
+        room.members.remove(user_id)
+        if user_id in room.admins:
+            room.admins.remove(user_id)
+        room.save()
+
+    for chat in user_chats:
+        if chat.user_1 == user_id:
+            del chat.user_1
+            chat.save()
+        else:
+            del chat.user_2
+            chat.save()
+
+    user_in_db.delete()
+
+    return {'success': True, 'status': 201}
 
 # @sio.on('edit_user')
 # def edit_user(payload: dict):
