@@ -39,7 +39,7 @@ async def register(user: UserIn) -> JSONResponse:
     except Exception as err:
         raise HTTPException(status_code=500, detail='Error creating user')
 
-    return JSONResponse({"message": "login success"}, 201)
+    return JSONResponse({"message": "Registration success"}, 201)
 
 
 @auth_router.post('/login')
