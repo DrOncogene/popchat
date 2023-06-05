@@ -153,6 +153,30 @@ async def get_chat(sid: str, payload: dict) -> dict:
 
     return {'chat': chat, 'status': 200}
 
+@sio.on('get_room')
+async def get_room(sid: str, payload: dict) -> dict:
+    """Gets a room from the database and returns it
+    """
+    if not payload or len(payload) == 0:
+        return {
+            'error': 'Empty payload sent',
+            'status': 400
+        }
+
+    room_id = payload.get('id')
+    room = db.get_by_id(Room, room_id)
+
+    if not room:
+        return {
+            'error': 'No room found',
+            'status': 404
+        }
+
+    return {
+        'room': room.to_dict(),
+        'status': 200
+    }
+
 
 @sio.on('new_message')
 async def new_message(sid: str, payload: dict) -> dict:
