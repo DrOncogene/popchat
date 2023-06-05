@@ -621,6 +621,50 @@ async def delete_chat(sid: str, payload: dict) -> dict:
 
     return {'success': True, 'status': 201}
 
+@sio.on('delete_room')
+async def delete_room(sid: str, payload: dict) -> dict:
+    """
+    delete_room(room_id, admin_id): deletes a room as long as the current user is an admin in the room
+
+    payload: {room_id: string, admin_id: string}
+
+    return: {success: True, status: 201}, else {error: string, status: int}
+    """
+    if not payload or len(payload) == 0:
+        return {
+            'error': 'Empty payload',
+            'status': 400
+        }
+
+    room_id = payload.get('room_id')
+    admin_id = payload.get('admin_id')
+    if not room_id or not admin_id:
+        return {
+            'error': 'Invalid payload',
+            'status': 400
+        }
+
+    room_in_db = db.get_by_id(Room, room_id)
+    if not room_in_db:
+        return {
+            'error': 'No Room found',
+            'status': 404
+        }
+
+    if admin_id not in room_in_db.admins:
+        return {
+            'error': 'User not an admin of Room',
+            'status': 400
+        }
+
+    room_in_db.delete()
+
+    return {'success': True, 'status': 201}
+
+
+
+
+
 # @sio.on('edit_user')
 # def edit_user(payload: dict):
 #     """deletes or edit a user"""
