@@ -461,7 +461,60 @@ async def update_room_name(sid: str, payload: dict) -> dict:
         'status': 201
     }
 
+@sio.on('update_room_admins')
+async def update_room_admins(sid: str, payload: dict) -> dict:
+    """
+    update_room_admins(room_id, admin_id, new_admin, flag): add or remove an admin to the list of admins of a room depending on flag(add or remove)
 
+    payload{room_id: id (string), admin_id: id (string),
+    flag: boolean ('True' |'False')}
+
+    flag definition: 10 - Means Add new admin, 20 - Means Delete admin
+
+    return: {success: True, status: 201}, else {error: string, status: int}
+    """
+
+    if not payload or len(payload) == 0:
+        return {
+            'error': 'Empty payload',
+            'status': 400
+        }
+
+    room_id = payload.get('room_id')
+    admin_id = payload.get('admin_id')
+    flag = payload.get('flag')
+    if not room_id or not admin_id or not flag:
+        return {
+            'error': 'Invalid payload',
+            'status': 400
+        }
+
+    room_in_db = db.get_by_id(Room, room_id)
+    if not room_in_db:
+        return {
+            'error': 'No Room found',
+            'status': 404
+        }
+
+    if admin_id not in room_in_db.admins:
+        return {
+            'error': 'User not an Admin of Room',
+            'status': 400
+        }
+
+    if flag == CREATE_ADMIN:
+        room_in_db.admins.append(admin_id)
+        room_in_db.save()
+        return {'success': True, 'status': 200}
+    elif flag == DELETE_ADMIN:
+        room_in_db.admins.remove(admin_id)
+        room_in_db.save()
+        return {'success': True, 'status': 200}
+    else:
+        return {
+            'error': 'Invalid flag',
+            'status': 400,
+        }
 
 
 
