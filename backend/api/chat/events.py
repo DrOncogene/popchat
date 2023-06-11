@@ -321,7 +321,7 @@ async def create_chat(sid: str, payload: dict) -> dict:
     chat.reload()
 
     sio.enter_room(sid, str(chat.id))
-    await sio.emit('new_chat', {'name': str(chat.id)})
+    await sio.emit('new_chat', {'id': str(chat.id)})
 
     chat_dict = chat.to_dict()
     chat_dict['messages'] = group_messages(chat_dict['messages'])
