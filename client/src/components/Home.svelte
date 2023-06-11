@@ -33,29 +33,30 @@
 
     matches = [];
     if (term.replace('@', '').length === 0) {
+      activeChats = $allChats;
       return;
     }
     // filter by type and search term
     if (!term.startsWith('@')) {
-      const matchedActiveChats = activeChats.filter((chat) => {
-        const chatName = chat.name.toLowerCase();
+      const matchedActiveChats = $allChats.filter((chat) => {
+        let chatName;
+        if (chat.type === 'chat') {
+          // @ts-ignore
+          chatName = chat.user_1 === $user.username ? chat.user_2 : chat.user_1;
+        } else {
+          // @ts-ignore
+          chatName = chat.name.toLowerCase();
+        }
         if (chatName.includes(term)) return chat;
       });
-      if (matchedActiveChats.length > 0) {
-        // if atleast one is matched amoung the current chats
-        // update with result and return
-        activeChats = matchedActiveChats;
-        return;
-      }
-      // else return to default state
-      activeChats = $allChats;
+      // update with result and return
+      activeChats = matchedActiveChats;
       return;
     }
     // search through all users
     term = term.replace('@', '');
     socket.emit('get_users', { search_term: term }, (payload) => {
       matches = payload.matches;
-      console.log('MATCHED', matches, payload);
     });
   }
 
@@ -63,12 +64,12 @@
 </script>
 
 <section class="main-section grid md:grid-cols-home md:max-w-[1040px] h-[550px] m-auto bg-dark-pri shadow-xl shadow-black">
-  <aside class="right hidden relative md:flex flex-col border-r border-r-gray-500 w-[350px]">
+  <aside class="right hidden relative md:flex flex-col border-r border-r-gray-500 w-[350px] overflow-hidden">
     <div class="header h-[75px] flex justify-between items-center py-4 px-6 space-x-5 border-b border-b-gray-500">
-      <a on:click={showDetails} data-username={$user.username} href="/" class="flex items-center py-4 px-6 space-x-5">
+      <button on:click={showDetails} data-username={$user.username} class="flex items-center py-4 px-6 space-x-5">
         <div class="avatar relative w-10 h-10 rounded-full bg-pri-900"><i class="online block w-2 h-2 rounded-full bg-green-500 absolute top-0 right-1"></i></div>
         <div class="username">@{$user.username}</div>
-      </a>
+      </button>
       <div on:click={logout} on:keypress={logout}>
         <Button
           text='LOGOUT'
@@ -78,7 +79,7 @@
         />
       </div>
     </div>
-    <div class="flex flex-col justify-start items-center space-y-5 py-6">
+    <div class="flex flex-col justify-start items-center space-y-5 py-6 overflow-hidden">
       <FormInput
         onKeyUp={ search }
         placeholder='Search or start a new chat'
@@ -86,9 +87,11 @@
         name='search-input'
         styles='rounded-3xl bg-dark-sec'
       />
-      <div class="absolute top-[110px] right-0 w-full py-5 px-8 z-50">
+      {#if matches.length > 0}
+      <div class="absolute top-[110px] right-0 w-full py-5 px-8 z-50 h-full bg-black opacity-20">
         <SearchResult bind:matches={ matches } />
       </div>
+      {/if}
       <h4 class="font-semibold text-lg self-start px-4">Messages</h4>
       <ChatList bind:activeChats={ activeChats } />
       <NewRoom />

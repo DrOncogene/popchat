@@ -24,7 +24,6 @@ type DayMessages = [day: string, messages: Message[]]
 
 type Chat = {
   id: string;
-  name: string;
   last_msg: Message;
   type: string;
   user_1: string,

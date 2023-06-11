@@ -22,7 +22,7 @@
     styles='rounded-3xl px-5 w-3/4'
     textarea={true}
   />
-  <button type="submit" class="flex justify-center items-center w-12 h-12 rounded-full bg-pri-900">
+  <button title="Send" type="submit" class="flex justify-center items-center w-12 h-12 rounded-full bg-pri-900">
     <Send size='1.5em' color='#1FDBA5'/>
   </button>
 </form>
