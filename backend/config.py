@@ -1,19 +1,9 @@
-# """
-# defines configuration classes
-# """
-from os import environ, path, getenv
+"""
+defines configuration classes
+"""
 from datetime import timedelta
 
 from pydantic import BaseSettings
-# from dotenv import load_dotenv
-# # from redis import Redis
-
-# get the current dir
-# curr_dir = path.abspath(path.dirname(__file__))
-# get the .env file path (curr_dir/.env)
-# env_dir = path.join(curr_dir, '.env')
-# load_dotenv(env_dir)
-# print(environ.get('FLASK_SECRET_KEY'))
 
 
 class Settings(BaseSettings):
@@ -31,15 +21,15 @@ class Settings(BaseSettings):
         env_file_encoding = 'utf-8'
 
 
-# class ProdConfig(Config):
-#     """production configs"""
-#     FLASK_ENV = 'production'
-#     TESTING = False
-#     DEBUG = False
+class DBSettings(BaseSettings):
+    """db config vars"""
+    DB_NAME: str = 'popchat'
+    DB_PORT: int = 27017
+    DB_HOST: str = 'localhost'
+    DB_USER: str = None
+    DB_PASSWD: str = None
 
-
-# class DevConfig(Config):
-#     """dev configs"""
-#     FLASK_ENV = 'development'
-#     TESTING = True
-#     DEBUG = True
+    class Config:
+        """config class"""
+        env_file = '.env'
+        env_file_encoding = 'utf-8'
