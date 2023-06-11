@@ -7,9 +7,6 @@ from functools import lru_cache
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-# from fastapi_socketio import SocketManager
-import socketio
-from socketio import AsyncServer, ASGIApp
 from .sockets import sio_app
 from .auth import auth_router
 from fastapi_jwt_auth import AuthJWT
