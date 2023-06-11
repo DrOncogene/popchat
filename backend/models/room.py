@@ -7,7 +7,6 @@ from mongoengine import (
     Document,
     StringField,
     ListField,
-    ReferenceField,
     EmbeddedDocumentField
 )
 from models.base_model import Base
@@ -58,6 +57,7 @@ class Room(Base, Document):
                                 in self.messages]
         obj_dict['last_msg'] = (self.last_msg.to_dict()
                                 if self.last_msg else None)
+        obj_dict['type'] = 'room'
 
         return obj_dict
 
