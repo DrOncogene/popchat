@@ -4,7 +4,6 @@
 Defines the storage engine.
 """
 
-from os import getenv
 from typing import Type
 from mongoengine import connect
 from mongoengine.queryset.visitor import Q
@@ -27,7 +26,6 @@ class Engine:
     DB_USER = settings.DB_USER
     DB_PASSWD = settings.DB_PASSWD
 
-    # FIXME : Should preferrably use `DB_NAME` obtained from environment
     def load(self):
         """connects to the db"""
         if self.DB_USER and self.DB_PASSWD:
