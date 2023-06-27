@@ -20,7 +20,7 @@ module.exports = {
         },
         'dark-pri': '#090E0F',
         'dark-sec': '#151B1C',
-        'dark-transp': 'rgba(255, 255, 255, 0.1)',
+        'dark-transp': 'rgba(255, 255, 255, 0.01)',
         'msg-blue': '#00A8C5'
       },
       gridTemplateColumns: {

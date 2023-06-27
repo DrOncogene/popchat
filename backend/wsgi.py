@@ -1,7 +1,10 @@
 """
 the wsgi server entry point
 """
-from api import app, sio
+from api.chat import *
+from api import create_app
+
+app = create_app()
 
 
 if __name__ == '__main__':

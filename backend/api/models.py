@@ -5,10 +5,10 @@ import re
 from pydantic import BaseModel, EmailStr, Field
 
 
-username_regex = "^[A-Za-z][A-Za-z0-9]{4,10}$"
+username_regex = "^[A-Za-z][A-Za-z0-9]{4,10}$"  # noqa: W605
 passwd_regex = ("^(?=.*[A-Za-z])"
-                "(?=.*\d)"
-                "[A-Za-z\d\.+-=#_%|&@]{7,16}$")
+                "(?=.*\d)"  # noqa: W605
+                "[A-Za-z\d\.+-=#_%|&@]{7,16}$")  # noqa: W605
 
 
 class UserBase(BaseModel):
@@ -24,6 +24,7 @@ class UserIn(UserBase):
 
 class UserOut(UserBase):
     """user model for the api"""
+    id: str
     auth_token: str
 
 
@@ -33,14 +34,18 @@ class Message(BaseModel):
     text: str
     when: str
 
+
 class Chat(BaseModel):
     """chat model for the api"""
+    id: str
     name: str
     members: list[UserOut]
     messages: list[Message]
 
+
 class ApiRoom(BaseModel):
     """room model for the api"""
+    id: str
     name: str
     members: list[UserOut]
     admins: list[UserOut]

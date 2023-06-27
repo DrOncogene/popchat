@@ -10,28 +10,26 @@ interface ImportMeta {
   readonly env: ImportMetaEnv
 }
 
+type Paragraph = HTMLParagraphElement;
+
+type Input = HTMLInputElement;
+
 type Message = {
   sender: string;
   when: string;
   text: string;
 }
 
-type GroupedMessage = [
-  key: string,
-  Message[]
-]
+type DayMessages = [day: string, messages: Message[]]
 
 type Chat = {
   id: string;
   name: string;
   last_msg: Message;
   type: string;
-  user_2?: string;
-  messages?: GroupedMessage[];
-  members?: string[];
-  admins?: string[];
-  created_by?: string;
-  updated_at?: string;
+  user_1: string,
+  user_2: string;
+  messages: DayMessages[];
 }
 
 type Room = {
@@ -39,7 +37,7 @@ type Room = {
   name: string;
   last_msg: Message;
   type: string;
-  messages: GroupedMessage[];
+  messages: DayMessages[];
   members: string[];
   admins: string[];
   created_by: string;
@@ -48,15 +46,12 @@ type Room = {
 
 interface User {
   username: string;
-  chats: Array<Chat>;
-  rooms: Array<Chat>;
-  all_chats: Array<Chat | Room>;
   id: string;
   email: string;
 }
 
 interface State {
   page: string;
-  room: Chat;
-  chat: Chat;
+  room: string;
+  chat: string;
 }

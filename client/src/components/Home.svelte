@@ -1,11 +1,17 @@
 <script lang="ts">
   import ChatPlus from 'svelte-material-icons/ChatPlus.svelte';
-  import { user, currentChat, currentRoom, currentDetail } from '../lib/store';
+  import {
+    user,
+    chatStore,
+    roomStore,
+    activeChats as allChats,
+  } from '../lib/store';
   import FormInput from './FormInput.svelte';
   import ChatList from './ChatList.svelte';
   import {
-    fetchCurrentChat,
-    toggleWidget,
+    fetchCurrentChatOrRoom,
+    fetchUserChats,
+    toggleRoomWidget,
     showDetails,
     logout
   } from '../lib/helpers';
@@ -16,7 +22,10 @@
   import ChatView from './ChatView.svelte';
   import DetailsView from './DetailsView.svelte';
 
-  fetchCurrentChat();
+  fetchUserChats();
+  fetchCurrentChatOrRoom();
+  
+  let matches = [];
 
   function search(e: KeyboardEvent) {
     const input = <HTMLInputElement>e.target;
@@ -24,12 +33,11 @@
 
     matches = [];
     if (term.replace('@', '').length === 0) {
-      activeChats = $user.all_chats;
       return;
     }
     // filter by type and search term
     if (!term.startsWith('@')) {
-      const matchedActiveChats = $user.all_chats.filter((chat) => {
+      const matchedActiveChats = activeChats.filter((chat) => {
         const chatName = chat.name.toLowerCase();
         if (chatName.includes(term)) return chat;
       });
@@ -40,24 +48,21 @@
         return;
       }
       // else return to default state
-      activeChats = $user.all_chats;
+      activeChats = $allChats;
       return;
     }
     // search through all users
-    socket.emit('get_users', (payload: User[]) => {
-      matches = payload.filter((currUser) => {
-        term = term.replace('@', '');
-        if ($user.username === currUser.username) return;
-        if (currUser.username.toLowerCase().includes(term)) return true;
-      });
+    term = term.replace('@', '');
+    socket.emit('get_users', { search_term: term, id: $user.id }, (payload) => {
+      matches = payload.matches;
+      console.log('MATCHED', matches, payload);
     });
   }
 
-  $: activeChats = $user ? $user.all_chats : null;
-  $: matches = [];
+  $: activeChats = $allChats;
 </script>
 
-<section class="main-section grid md:grid-cols-home md:max-w-[1040px] h-[600px] m-auto bg-dark-pri shadow-2xl shadow-black">
+<section class="main-section grid md:grid-cols-home md:max-w-[1040px] h-[550px] m-auto bg-dark-pri shadow-xl shadow-black">
   <aside class="right hidden relative md:flex flex-col border-r border-r-gray-500 w-[350px]">
     <div class="header h-[75px] flex justify-between items-center py-4 px-6 space-x-5 border-b border-b-gray-500">
       <a on:click={showDetails} data-username={$user.username} href="/" class="flex items-center py-4 px-6 space-x-5">
@@ -81,28 +86,26 @@
         name='search-input'
         styles='rounded-3xl bg-dark-sec'
       />
-      <div class="absolute top-[110px] right-0 w-full py-5 px-8 z-50">
+      {#if matches.length > 0}
+      <div class="absolute top-[125px] right-0 w-full px-8 z-50 h-full bg-dark-transp backdrop-blur-sm shadow-md">
         <SearchResult bind:matches={ matches } />
       </div>
       <h4 class="font-semibold text-lg self-start px-4">Messages</h4>
       <ChatList bind:activeChats={ activeChats } />
       <NewRoom />
     </div>
-    <button on:click={toggleWidget} class="peer absolute right-2 bottom-2 w-12 h-12 rounded-full bg-pri-900 flex justify-center items-center shadow-lg shadow-black hover:shadow-none transition-shadow duration-300 z-50">
+    <button on:click={toggleRoomWidget} class="peer absolute right-2 bottom-2 w-12 h-12 rounded-full bg-pri-900 flex justify-center items-center shadow-lg shadow-black hover:shadow-none transition-shadow duration-300 z-50">
       <ChatPlus size="2em" />
     </button>
   </aside>
 
-  <div class="relative left h-[600px] overflow-hidden">
-    {#if $currentChat || $currentRoom}
+  <div class="relative left h-[550px] overflow-hidden">
+    {#if $chatStore || $roomStore}
       <ChatView />
     {:else}
       <div class="w-full h-[525px] flex justify-center items-center">
         <p class="">Welcome! Choose a chat on the left to get started</p>
       </div>
-    {/if}
-    {#if $currentDetail}
-      <DetailsView />
     {/if}
   </div>
 </section>
