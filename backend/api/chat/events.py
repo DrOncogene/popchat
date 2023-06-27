@@ -11,6 +11,13 @@ from models.room import Room
 from models.message import Message
 
 
+# FLAGS
+ADD_MEMBER = 10
+REMOVE_MEMBER = 11
+ADD_ADMIN = 20
+REMOVE_ADMIN = 21
+
+
 def group_messages(messages: list[dict]) -> list:
     """
     takes a list of messages and groups them by date
@@ -82,8 +89,17 @@ async def get_users(sid: str, payload: dict) -> dict:
     fetches a list of users whose username matches a query
     term
     """
+    user_id = payload.get('id')
+    if user_id is None:
+        return {'error': 'no user id', 'status': 400}
+
+    user = db.get_by_id(User, user_id)
+    if user is None:
+        return {'error': 'invalid user id', 'status': 404}
+
     term = payload.get('search_term', '')
-    matched_users = [user.to_dict() for user in db.match_users(term)]
+    matched_users = [user.to_dict() for user in db.match_users(term)
+                     if user_id != str(user.id)]
 
     return {'matches': matched_users, 'status': 200}
 
@@ -385,7 +401,7 @@ async def add_or_remove_member(sid: str, payload: dict) -> dict:
     room_id = payload.get('id')
     member = payload.get('member')
     admin = payload.get('admin')
-    flag = payload.get('flag')  # 1 for add, 0 for remove
+    flag = payload.get('flag')
 
     if not room_id or not member or not admin or flag is None:
         return {'error': 'missing required info', 'status': 400}
@@ -404,10 +420,14 @@ async def add_or_remove_member(sid: str, payload: dict) -> dict:
     if admin not in room.admins:
         return {'error': 'not an admin', 'status': 403}
 
-    if int(flag) == 1:
+    if int(flag) == ADD_MEMBER:
         room.update(add_to_set__members=member_in_db.username)
-    else:
+    elif int(flag) == REMOVE_MEMBER:
         room.update(pull__members=member_in_db.username)
+        if member_in_db.username in room.admins:
+            room.update(pull__admins=member_in_db.username)
+    else:
+        return {'error': 'invalid flag', 'status': 400}
 
     room.save()
     room.reload()
@@ -415,9 +435,9 @@ async def add_or_remove_member(sid: str, payload: dict) -> dict:
     room_dict = room.to_dict()
     room_dict['messages'] = group_messages(room_dict['messages'])
 
-    if int(flag) == 1:
+    if int(flag) == ADD_MEMBER:
         await sio.emit('new_room', {'id': str(room.id)})
-    else:
+    elif int(flag) == REMOVE_MEMBER:
         await sio.emit('remove_from_room', {'id': str(room.id)})
 
     return {'room': room_dict, 'status': 201}
@@ -459,3 +479,15 @@ async def edit_room_name(sid: str, payload: dict) -> dict:
     await sio.emit('new_room', {'id': str(room.id)})
 
     return {'room': room_dict, 'status': 201}
+
+
+# TODO: add a handler for editing the room admins list
+async def add_or_remove_admin(sid: str, payload: dict) -> dict:
+    """
+    adds or removes an admin from the room admins list
+    """
+    raise NotImplementedError
+
+
+sio.on('add_admin', add_or_remove_admin)
+sio.on('remove_admin', add_or_remove_admin)
