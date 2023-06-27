@@ -53,7 +53,7 @@
     }
     // search through all users
     term = term.replace('@', '');
-    socket.emit('get_users', { search_term: term }, (payload) => {
+    socket.emit('get_users', { search_term: term, id: $user.id }, (payload) => {
       matches = payload.matches;
       console.log('MATCHED', matches, payload);
     });
@@ -86,7 +86,8 @@
         name='search-input'
         styles='rounded-3xl bg-dark-sec'
       />
-      <div class="absolute top-[110px] right-0 w-full py-5 px-8 z-50">
+      {#if matches.length > 0}
+      <div class="absolute top-[125px] right-0 w-full px-8 z-50 h-full bg-dark-transp backdrop-blur-sm shadow-md">
         <SearchResult bind:matches={ matches } />
       </div>
       <h4 class="font-semibold text-lg self-start px-4">Messages</h4>

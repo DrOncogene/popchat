@@ -167,6 +167,35 @@ function openChat(e: Event) {
 }
 
 function newChat(e: Event) {
+  const target = <HTMLButtonElement>e.target;
+  const username = target.parentElement.dataset.username ||
+    target.parentElement.parentElement.dataset.username;
+
+  const chat: Chat = {
+    id: null,
+    user_1: get(user).username,
+    user_2: username,
+    type: 'chat',
+    messages: [],
+    last_msg: null,
+  };
+
+  const chats = get(chatsAndRoomsStore).filter((chat) => {
+    return chat.type === 'chat';
+  });
+  for (const chat of chats) {
+    // @ts-ignore
+    if (chat.user_1 === username || chat.user_2 === username) {
+      // @ts-ignore
+      socket.emit('get_chat', {id: chat.id}, (payload) => {
+        chatStore.set(payload.chat);
+      });
+      roomStore.set(null);
+      changeState('home', chat.id, null);
+      document.querySelector('#details-popup').remove();
+      return;
+    }
+  }
 
 }
 
@@ -305,6 +334,98 @@ function updateChatList (chatId: string, message: Message) {
     return aDate - bDate;
   });
   chatsAndRoomsStore.set(chatsAndRooms);
+}
+
+function addMember(e: Event) {
+  e.preventDefault();
+
+  const input = <HTMLInputElement>document.querySelector('#add-member-input');
+  const payload = {
+    id: get(roomStore).id,
+    member: input.value.trim(),
+    admin: get(user).username,
+    flag: 10,
+  };
+
+  socket.emit('add_member', payload, (data) => {
+    if (data.status !== 201) {
+      showFormError(data.error, input);
+      return;
+    }
+
+    const room = get(roomStore);
+    room.members.push(input.value.trim());
+    roomStore.set(data.room);
+    input.value = '';
+
+    document.querySelector('#details-popup').remove();
+    const detailPopup = new DetailsView({
+      target: document.querySelector('.main-section .left'),
+      props: {
+        details: data.room,
+      }
+    });
+  });
+}
+
+function deleteMember(e: Event) {
+  const target = <HTMLButtonElement>e.target;
+  const username = target.parentElement.dataset.username ||
+    target.parentElement.parentElement.dataset.username;
+
+  const payload = {
+    id: get(roomStore).id,
+    member: username,
+    admin: get(user).username,
+    flag: 11,
+  };
+
+  socket.emit('remove_member', payload, (data) => {
+    console.log('REMOVE', data)
+    if (data.status !== 201) return;
+
+    const room = get(roomStore);
+    room.members.push(username);
+    roomStore.set(data.room);
+
+    document.querySelector('#details-popup').remove();
+    const detailPopup = new DetailsView({
+      target: document.querySelector('.main-section .left'),
+      props: {
+        details: data.room,
+      }
+    });
+  });
+}
+
+function editRoomName(e: Event) {
+  e.preventDefault();
+
+  const roomId = (<HTMLButtonElement>e.target)
+    .parentElement.parentElement.dataset.id;
+  const input = <HTMLInputElement>document.querySelector('#room-name-change');
+
+  const payload = {
+    id: roomId,
+    name: input.value.trim(),
+    admin: get(user).username,
+  };
+  console.log(payload)
+
+  socket.emit('edit_room_name', payload, (data) => {
+    console.log(data)
+    if (data.status !== 201) return;
+
+    roomStore.set(data.room);
+
+    document.querySelector('#details-popup').remove();
+    const detailPopup = new DetailsView({
+      target: document.querySelector('.main-section .left'),
+      props: {
+        details: data.room,
+      }
+    });
+  });
 }
 
 export {

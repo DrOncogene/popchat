@@ -34,7 +34,18 @@
     <ProfileImage />
     <p class="text-lg font-bold ml-2">{details.name}</p>
   </div>
+<<<<<<< HEAD
   <a on:click={closeDetails} href="/" class="absolute right-0 mx-10"><Close size="1.5em" /></a>
+=======
+  {#if details.admins.includes($user.username)}
+  <button on:click={displayEditForm} title="Edit name" class="absolute right-20" id="edit-btn">
+    <PencilIcon size="1.5em" />
+  </button>
+  {/if}
+  <button on:click={closeDetails} title="close" class="absolute right-0 mx-5">
+    <Close size="1.5em" />
+  </button>
+>>>>>>> 35b867a (BUG FIXES)
 {:else if 'type' in details && details.type === 'chat'}
 {@const user2 = details.user_1 === $user.username ? details.user_2 : details.user_1}
   <div class="w-full flex flex-nowrap items-center">
@@ -46,7 +57,12 @@
   <div data-username="{details.username}" class="w-full flex flex-nowrap items-center">
     <ProfileImage />
     <p class="text-lg font-bold ml-2">@{details.username}</p>
+<<<<<<< HEAD
     <a on:click={newChat} href="/" class="ml-10">
+=======
+    {#if details.username !== $user.username}
+    <button title="Send message" data-username="{details.username}" on:click={newChat} class="ml-10">
+>>>>>>> 35b867a (BUG FIXES)
       <MessageIcon size="1.5em" color="#1FDBA5" />
     </a>
   </div>
