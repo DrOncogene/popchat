@@ -18,8 +18,8 @@
       document.querySelector('#username');
     const passInput: HTMLInputElement =
       document.querySelector('#password');
-    const username = userInput.value;
-    const password = passInput.value;
+    const username = userInput.value.trim();
+    const password = passInput.value.trim();
 
     if (!validateInput(username, password)) {
       return;

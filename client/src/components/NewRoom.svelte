@@ -2,7 +2,7 @@
   import FormInput from './FormInput.svelte';
   import Close from 'svelte-material-icons/Close.svelte';
   import Button from './Button.svelte';
-  import { showFormError, toggleRoomWidget } from '../lib/helpers';
+  import { changeState, fetchCurrentChatOrRoom, fetchUserChats, showFormError, toggleRoomWidget } from '../lib/helpers';
   import { user, state, roomStore, activeChats as chatsAndRooms } from '../lib/store';
   import socket from '../lib/socket';
 
@@ -10,14 +10,23 @@
     e.preventDefault();
 
     const nameInput = <HTMLInputElement>document.querySelector('#room-name');
-    const memberInput = <HTMLInputElement>document.querySelector('#new-member');
+    const memberInput = <HTMLInputElement>document.querySelector('#new-members');
+
+    if (!nameInput.value.trim() || !memberInput.value.trim()) {
+      showFormError('Name and members are required');
+      return;
+    }
+
+    let membersArray = memberInput.value.trim().split(';');
+    membersArray = membersArray.filter((member) => {
+      return member.trim() !== '';
+    });
+    membersArray = membersArray.map(member => member.trim());
 
     const payload = {
-      member: memberInput.value.trim(),
-      room_data: {
-        name: nameInput.value.trim(),
-        created_by: $user.id
-      }
+      creator: $user.id,
+      members: membersArray,
+      name: nameInput.value.trim(),
     };
 
     socket.emit('create_room', payload, (payload) => {
@@ -25,34 +34,32 @@
         showFormError('User does not exist', memberInput);
         return;
       }
-      socket.emit('get_user', $user.id, (payload: User) => {
-        user.set(payload);
-      });
       const newRoom: Room = payload.room;
-      for (let chat of $chatsAndRooms) {
-        if (chat.id !== newRoom.id) continue;
-        $state.room = chat.id;
-        break;
-      }
+
+      fetchUserChats();
+      changeState('home', null, newRoom.id);
       roomStore.set(newRoom);
+      fetchCurrentChatOrRoom();
+      toggleRoomWidget(e);
     });
-    toggleRoomWidget(e);
   }
 </script>
 
 <div class="hidden absolute right-8 bottom-8 min-h-[200px] p-4 bg-pri-900 shadow-lg shadow-black transition-all duration-700" id="new-room-widget">
-  <form on:submit={e => createRoom(e)} class="relative flex flex-col justify-center items-center">
-    <a on:click={e => toggleRoomWidget(e)} href="/" class="absolute -right-2 -top-2"><Close /></a>
+  <form on:submit={e => createRoom(e)} class="relative flex flex-col justify-center">
+    <button on:click={e => toggleRoomWidget(e)} class="absolute -right-2 -top-2"><Close /></button>
     <p class="invisible text-xs text-center w-full text-red-500" id="form-errors">An error</p>
     <FormInput
       name='room-name'
       placeholder='Enter room name'
       styles='mt-6'
+      errorMsg={ [true, 'room name required'] }
     />
     <FormInput
-      name='new-member'
-      placeholder='Add one member'
-      styles='mt-6'
+      name='new-members'
+      placeholder='Add members'
+      styles='mt-3'
+      errorMsg={ [true, 'usernames separated by semicolons'] }
     />
     <Button
       text='Create Room'

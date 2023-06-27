@@ -108,6 +108,7 @@ async def logout(
 
     return JSONResponse({'detail': 'success'})
 
+
 @auth_router.get('/forgot_password')
 async def get_reset_token(email: str, response: JSONResponse) -> JSONResponse:
     user = db.get_by_email(email)
@@ -127,15 +128,6 @@ async def get_reset_token(email: str, response: JSONResponse) -> JSONResponse:
 
     return JSONResponse({'detail': 'success'})
 
-@auth_router.get('/reset_password/{reset_token}')
-async def get_reset_pass_form(reset_token: str):
-    """"""
-    user = db.get_by_reset_token(reset_token)
-    if not user:
-        return HTTPException(status_code=404, detail='No user found')
-
-    # TODO: Add logic to send password reset form to user
-    pass
 
 # TODO: Once user confirms through email and a reset token is created,
 # the token is used to access this endpoint that will reset the password
