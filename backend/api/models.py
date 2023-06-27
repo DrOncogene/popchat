@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Models for the API."""
+"""Pydantic Models for the API."""
 import re
 
 from pydantic import BaseModel, EmailStr, Field
@@ -13,6 +13,7 @@ passwd_regex = ("^(?=.*[A-Za-z])"
 
 class UserBase(BaseModel):
     """user model for the api"""
+    id: str | None = None
     username: str | None = Field(regex=username_regex)
     email: EmailStr | None
 
@@ -20,12 +21,6 @@ class UserBase(BaseModel):
 class UserIn(UserBase):
     """user model for the api"""
     password: str = Field(regex=passwd_regex)
-
-
-class UserOut(UserBase):
-    """user model for the api"""
-    id: str
-    auth_token: str
 
 
 class Message(BaseModel):
@@ -39,7 +34,7 @@ class Chat(BaseModel):
     """chat model for the api"""
     id: str
     name: str
-    members: list[UserOut]
+    members: list[UserBase]
     messages: list[Message]
 
 
@@ -47,7 +42,7 @@ class ApiRoom(BaseModel):
     """room model for the api"""
     id: str
     name: str
-    members: list[UserOut]
-    admins: list[UserOut]
-    creator: UserOut
+    members: list[UserBase]
+    admins: list[UserBase]
+    creator: UserBase
     messages: list[Message]

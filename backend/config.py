@@ -1,24 +1,15 @@
-# """
-# defines configuration classes
-# """
-from os import environ, path, getenv
+"""
+defines configuration classes
+"""
 from datetime import timedelta
+from secrets import token_hex
 
 from pydantic import BaseSettings
-# from dotenv import load_dotenv
-# # from redis import Redis
-
-# get the current dir
-# curr_dir = path.abspath(path.dirname(__file__))
-# get the .env file path (curr_dir/.env)
-# env_dir = path.join(curr_dir, '.env')
-# load_dotenv(env_dir)
-# print(environ.get('FLASK_SECRET_KEY'))
 
 
 class Settings(BaseSettings):
     """common config vars"""
-    authjwt_secret_key: str
+    authjwt_secret_key: str = token_hex(32)
     authjwt_token_location: set[str] = {'cookies'}
     authjwt_access_token_expires: timedelta = timedelta(days=1)
     authjwt_access_cookie_key = '_popchat_auth'
@@ -31,15 +22,29 @@ class Settings(BaseSettings):
         env_file_encoding = 'utf-8'
 
 
-# class ProdConfig(Config):
-#     """production configs"""
-#     FLASK_ENV = 'production'
-#     TESTING = False
-#     DEBUG = False
+class DBSettings(BaseSettings):
+    """db config vars"""
+    DB_NAME: str = 'popchat'
+    DB_PORT: int = 27017
+    DB_HOST: str = 'localhost'
+    DB_USER: str = None
+    DB_PASSWD: str = None
+
+    class Config:
+        """config class"""
+        env_file = '.env'
+        env_file_encoding = 'utf-8'
 
 
-# class DevConfig(Config):
-#     """dev configs"""
-#     FLASK_ENV = 'development'
-#     TESTING = True
-#     DEBUG = True
+class RedisSettings(BaseSettings):
+    """redis cache config vars"""
+    REDIS_HOST: str = 'localhost'
+    REDIS_PORT: int = 6379
+    REDIS_DB: int = 0
+    REDIS_PASSWD: str = None
+    REDIS_TTL: int = 60 * 60 * 12
+
+    class Config:
+        """config class"""
+        env_file = '.env'
+        env_file_encoding = 'utf-8'

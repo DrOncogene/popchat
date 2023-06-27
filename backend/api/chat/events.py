@@ -1,104 +1,42 @@
 """
 module for generating sockeio envent handlers
 """
-# import json
-# from datetime import datetime
-
-# from flask_socketio import join_room, emit
-
 from datetime import datetime
+
 from api.sockets import sio
 from storage import db
 from models.user import User
 from models.chat import Chat
 from models.room import Room
 from models.message import Message
-# from .background_tasks import put_user, add_message
 
 
-# @sio.on('edit_user')
-# def edit_user(payload: dict):
-#     """deletes or edit a user"""
-#     sio.start_background_task(put_user, payload)
+# FLAGS
+ADD_MEMBER = 10
+REMOVE_MEMBER = 11
+ADD_ADMIN = 20
+REMOVE_ADMIN = 21
 
 
-# @sio.on('create_room')
-# def new_room(payload: dict):
-#     """creates a new room and set the admin"""
-#     data: dict = payload.get('room_data')
-#     if data is None or 'name' not in data or 'created_by' not in data:
-#         return {'error': 'invalid room data', 'status': 400}
+def group_messages(messages: list[dict]) -> list:
+    """
+    takes a list of messages and groups them by date
+    """
 
-#     username = payload.get('member')
-#     new_member = db.get_one('User', username)
-#     if new_member is None:
-#         return {'error': 'cannot create a room with one user', 'status': 400}
+    new_messages = []
+    for message in messages:
+        when = message['when']
+        when_date = datetime.fromisoformat(when).date().strftime('%Y-%m-%d')
+        for day in new_messages:
+            day_date = day[0]
+            day_messages = day[1]
+            if day_date == when_date:
+                day_messages.append(message)
+                break
+        else:
+            new_messages.append([when_date, [message]])
 
-#     room = Room(**data)
-#     room.members.append(new_member)
-
-#     creator = db.get_one('User', data.get('created_by'))
-#     creator.rooms.append(room)
-#     room.admins.append(creator)
-#     new_member.rooms.append(room)
-
-#     if db.save():
-#         room_dict = room.to_dict()
-#         room_dict['messages'] = json.loads(room.messages)
-#         room_dict['type'] = 'room'
-#         emit('new_room', room_dict, include_self=False, to=username)
-#         return {'room': room_dict, 'status': 201}
-
-#     return {'error': 'unable to create room', 'status': 422}
-
-
-# @sio.on('create_chat')
-# def new_chat(payload: dict):
-#     """creates a new room and set the admin"""
-#     if 'members' not in payload:
-#         return {'error': 'members array not sent', 'status': 400}
-
-#     members = payload.pop('members')
-#     username_1 = members[0]
-#     username_2 = members[1]
-
-#     user_2 = db.get_one('User', username_2)
-#     if user_2 is None:
-#         return {'error': 'invalid receiver id', 'status': 404}
-
-#     payload.pop('id')
-#     payload['messages'] = json.dumps(payload.get('messages'))
-#     chat = Chat(**payload)
-#     user_1 = db.get_one('User', username_1)
-#     chat.user_1 = user_1.id
-#     chat.user_2 = user_2.id
-#     user_1.chats.append(chat)
-#     user_2.chats.append(chat)
-
-#     if db.save():
-#         resp = chat.to_dict()
-#         resp['messages'] = json.loads(chat.messages)
-#         resp['members'] = [user.username for user in chat.members]
-#         resp['type'] = 'chat'
-#         emit('new_room', resp, to=user_1.username, include_self=False)
-#         return {'chat': resp, 'status': 201}
-
-#     return {'error': 'unable to create room', 'status': 422}
-
-# # def room_add_user(room_id, user_id):
-# #     """adds a user to a room"""
-# #     user = db.get_one('User', user_id)
-# #     if user is None:
-# #         return dumps({'error': 'user not found'}), 404
-
-# #     room = db.get_one('Room', room_id)
-# #     if room is None:
-# #         return dumps({'error': 'invalid room id'}), 404
-
-# #     user.rooms.append(room)
-# #     db.save()
-
-# #     return dumps(user.to_dict())
+    return new_messages
 
 
 @sio.on('connect')
@@ -111,6 +49,7 @@ async def connect(sid: str, environ: dict, auth: dict) -> bool:
     :param auth: Authentication dict
         passed by the client
     """
+
     if auth is None:
         return False
 
@@ -150,11 +89,17 @@ async def get_users(sid: str, payload: dict) -> dict:
     fetches a list of users whose username matches a query
     term
     """
-    term: str = payload.get('search_term')
-    if term is None or term == '':
-        return {'error': 'no search term', 'status': 400}
+    user_id = payload.get('id')
+    if user_id is None:
+        return {'error': 'no user id', 'status': 400}
 
-    matched_users = [user.to_dict() for user in db.match_users(term)]
+    user = db.get_by_id(User, user_id)
+    if user is None:
+        return {'error': 'invalid user id', 'status': 404}
+
+    term = payload.get('search_term', '')
+    matched_users = [user.to_dict() for user in db.match_users(term)
+                     if user_id != str(user.id)]
 
     return {'matches': matched_users, 'status': 200}
 
@@ -213,6 +158,7 @@ async def get_chat(sid: str, payload: dict) -> dict:
     :param sid: The socket id of the client
     :param payload: The payload sent by the client
     """
+
     if not payload or len(payload) == 0:
         return {'error': 'no chat id', 'status': 400}
 
@@ -222,22 +168,81 @@ async def get_chat(sid: str, payload: dict) -> dict:
         return {'error': 'invalid chat id', 'status': 404}
 
     chat = chat.to_dict()
-    messages = []
-    for message in chat['messages']:
-        when = message['when']
-        when_date = datetime.fromisoformat(when).date().strftime('%Y-%m-%d')
-        for day in messages:
-            day_date = day[0]
-            day_messages = day[1]
-            if day_date == when_date:
-                day_messages.append(message)
-                break
-        else:
-            messages.append([when_date, [message]])
-
-    chat['messages'] = messages
+    chat['messages'] = group_messages(chat['messages'])
 
     return {'chat': chat, 'status': 200}
+
+@sio.on('get_room')
+async def get_room(sid: str, payload: dict) -> dict:
+    """Gets a room from the database and returns it
+    """
+    if not payload or len(payload) == 0:
+        return {
+            'error': 'Empty payload sent',
+            'status': 400
+        }
+
+    room_id = payload.get('id')
+    room = db.get_by_id(Room, room_id)
+
+    if not room:
+        return {
+            'error': 'No room found',
+            'status': 404
+        }
+
+    return {
+        'room': room.to_dict(),
+        'status': 200
+    }
+
+
+@sio.on('get_room')
+async def get_room(sid: str, payload: dict) -> dict:
+    """
+    fetches a room from the database and reformats
+    the messages to be grouped by date
+
+    :param sid: The socket id of the client
+    :param payload: The payload sent by the client
+    """
+
+    if not payload or len(payload) == 0:
+        return {'error': 'no room id', 'status': 400}
+
+    room_id = payload.get('id')
+    room = db.get_by_id(Room, room_id)
+    if room is None:
+        return {'error': 'invalid room id', 'status': 404}
+
+    room = room.to_dict()
+    room['messages'] = group_messages(room['messages'])
+
+    return {'room': room, 'status': 200}
+
+
+@sio.on('get_room')
+async def get_room(sid: str, payload: dict) -> dict:
+    """
+    fetches a room from the database and reformats
+    the messages to be grouped by date
+
+    :param sid: The socket id of the client
+    :param payload: The payload sent by the client
+    """
+
+    if not payload or len(payload) == 0:
+        return {'error': 'no room id', 'status': 400}
+
+    room_id = payload.get('id')
+    room = db.get_by_id(Room, room_id)
+    if room is None:
+        return {'error': 'invalid room id', 'status': 404}
+
+    room = room.to_dict()
+    room['messages'] = group_messages(room['messages'])
+
+    return {'room': room, 'status': 200}
 
 
 @sio.on('new_message')
@@ -246,6 +251,7 @@ async def new_message(sid: str, payload: dict) -> dict:
     adds a message to a chat or room and emits
     an event to all members of the room or chat
     """
+
     if not payload:
         return {'error': 'invalid payload', 'status': 400}
 
@@ -282,3 +288,206 @@ async def new_message(sid: str, payload: dict) -> dict:
                    to=str(room_or_chat.id), skip_sid=sid)
 
     return {'success': True, 'status': 201}
+
+
+@sio.on('join_room')
+async def join_room(sid: str, payload: dict) -> dict:
+    """
+    adds the user to a room
+    """
+
+    room_name = payload.get('name')
+    if not room_name:
+        return {'error': 'missing room name', 'status': 400}
+
+    sio.enter_room(sid, room_name)
+
+
+@sio.on('leave_room')
+async def leave_room(sid: str, payload: dict) -> dict:
+    """
+    adds the user to a room
+    """
+
+    room_name = payload.get('name')
+    if not room_name:
+        return {'error': 'missing room name', 'status': 400}
+
+    sio.leave_room(sid, room_name)
+
+
+@sio.on('create_room')
+async def create_room(sid: str, payload: dict) -> dict:
+    """
+    creates a new room and adds the creator and a mandatory
+    new member to the room
+    """
+
+    name: str = payload.get('name')
+    creator_id: str = payload.get('creator')
+    new_members: list[str] = payload.get('members')
+    if not name or not creator_id or not new_members or not len(new_members):
+        return {'error': 'missing required info', 'status': 400}
+
+    creator_in_db = db.get_by_id(User, creator_id)
+    if creator_id is None:
+        return {'error': 'invalid user id', 'status': 404}
+
+    for member in new_members:
+        new_member = db.get_by_username(member)
+        if new_member is None:
+            return {'error': 'invalid user id', 'status': 404}
+
+    room = Room(
+        name=name,
+        creator=creator_in_db.username,
+        members=[creator_in_db.username, *new_members],
+        admins=[creator_in_db.username]
+        )
+    room.save()
+    room.reload()
+
+    sio.enter_room(sid, str(room.id))
+    await sio.emit('new_room', {'id': str(room.id)})
+
+    return {'room': room.to_dict(), 'status': 201}
+
+
+@sio.on('create_chat')
+async def create_chat(sid: str, payload: dict) -> dict:
+    """
+    creates a new chat between two users
+    """
+
+    user_1 = payload.get('creator')
+    user_2 = payload.get('user_2')
+    initial_message = payload.get('message')
+    if not user_1 or not user_2 or not initial_message:
+        return {'error': 'missing required info', 'status': 400}
+
+    user_1 = db.get_by_username(user_1)
+    user_2 = db.get_by_username(user_2)
+    if user_1 is None or user_2 is None:
+        return {'error': 'invalid user id or username', 'status': 404}
+
+    existing_chat = db.get_chat_by_users(user_1.username, user_2.username)
+    if existing_chat is not None:
+        return {'error': 'chat already exists', 'status': 400}
+
+    message = Message(**initial_message)
+    message['when'] = datetime.fromisoformat(message['when'])
+    chat = Chat(
+        user_1=user_1.username,
+        user_2=user_2.username,
+        messages=[message]
+        )
+    chat.save()
+    chat.reload()
+
+    sio.enter_room(sid, str(chat.id))
+    await sio.emit('new_chat', {'id': str(chat.id)})
+
+    chat_dict = chat.to_dict()
+    chat_dict['messages'] = group_messages(chat_dict['messages'])
+
+    return {'chat': chat_dict, 'status': 201}
+
+
+async def add_or_remove_member(sid: str, payload: dict) -> dict:
+    """
+    adds a member to a room
+    """
+
+    room_id = payload.get('id')
+    member = payload.get('member')
+    admin = payload.get('admin')
+    flag = payload.get('flag')
+
+    if not room_id or not member or not admin or flag is None:
+        return {'error': 'missing required info', 'status': 400}
+
+    room = db.get_by_id(Room, room_id)
+    if room is None:
+        return {'error': 'invalid room id', 'status': 404}
+
+    if member in room.members and flag == 1:
+        return {'error': 'user already in room', 'status': 409}
+
+    member_in_db = db.get_by_username(member)
+    if member_in_db is None:
+        return {'error': 'invalid username', 'status': 404}
+
+    if admin not in room.admins:
+        return {'error': 'not an admin', 'status': 403}
+
+    if int(flag) == ADD_MEMBER:
+        room.update(add_to_set__members=member_in_db.username)
+    elif int(flag) == REMOVE_MEMBER:
+        room.update(pull__members=member_in_db.username)
+        if member_in_db.username in room.admins:
+            room.update(pull__admins=member_in_db.username)
+    else:
+        return {'error': 'invalid flag', 'status': 400}
+
+    room.save()
+    room.reload()
+
+    room_dict = room.to_dict()
+    room_dict['messages'] = group_messages(room_dict['messages'])
+
+    if int(flag) == ADD_MEMBER:
+        await sio.emit('new_room', {'id': str(room.id)})
+    elif int(flag) == REMOVE_MEMBER:
+        await sio.emit('remove_from_room', {'id': str(room.id)})
+
+    return {'room': room_dict, 'status': 201}
+
+
+# both share the same handler
+sio.on('add_member', add_or_remove_member)
+sio.on('remove_member', add_or_remove_member)
+
+
+@sio.on('edit_room_name')
+async def edit_room_name(sid: str, payload: dict) -> dict:
+    """
+    edits the name of a room
+    """
+
+    room_id = payload.get('id')
+    new_name = payload.get('name')
+    admin = payload.get('admin')
+
+    if not room_id or not new_name or not admin:
+        return {'error': 'missing required info', 'status': 400}
+
+    room = db.get_by_id(Room, room_id)
+    if room is None:
+        return {'error': 'invalid room id', 'status': 404}
+
+    admin_in_db = db.get_by_username(admin)
+    if admin not in room.admins or admin_in_db is None:
+        return {'error': 'not an admin', 'status': 403}
+
+    room.update(name=new_name)
+    room.save()
+    room.reload()
+
+    room_dict = room.to_dict()
+    room_dict['messages'] = group_messages(room_dict['messages'])
+
+    await sio.emit('new_room', {'id': str(room.id)})
+
+    return {'room': room_dict, 'status': 201}
+
+
+# TODO: add a handler for editing the room admins list
+async def add_or_remove_admin(sid: str, payload: dict) -> dict:
+    """
+    adds or removes an admin from the room admins list
+    """
+    raise NotImplementedError
+
+
+sio.on('add_admin', add_or_remove_admin)
+sio.on('remove_admin', add_or_remove_admin)

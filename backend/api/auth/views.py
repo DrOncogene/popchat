@@ -12,8 +12,8 @@ from fastapi_jwt_auth import AuthJWT
 from mongoengine.errors import NotUniqueError
 
 from models.user import User
-from storage import db
-from api.models import UserIn, UserOut
+from storage import db, cache
+from api.models import UserIn, UserBase
 from . import auth_router
 
 
@@ -39,7 +39,7 @@ async def register(user: UserIn) -> JSONResponse:
     except Exception as err:
         raise HTTPException(status_code=500, detail='Error creating user')
 
-    return JSONResponse({"message": "login success"}, 201)
+    return JSONResponse({"message": "Registration success"}, 201)
 
 
 @auth_router.post('/login')
@@ -47,7 +47,7 @@ async def login(
     user: UserIn,
     response: JSONResponse,
     JWT: Annotated[AuthJWT, Depends()]
-) -> UserOut:
+) -> UserBase:
     login_id = user.username or user.email
     if not login_id:
         raise HTTPException(status_code=400,
@@ -65,7 +65,7 @@ async def login(
         raise HTTPException(status_code=401, detail='Invalid password')
 
     new_token = JWT.create_access_token(the_user.username)
-    the_user.auth_token = str(new_token)
+    cache.set(new_token, str(the_user.id))
     the_user.save()
 
     response.set_cookie(
@@ -76,20 +76,21 @@ async def login(
         expires=datetime.now(timezone.utc) + timedelta(days=1)
     )
 
-    return UserOut(**the_user.to_dict())
+    return UserBase(**the_user.to_dict())
 
 
 @auth_router.get('/is_authenticated')
 def is_authenticated(
     token: Annotated[str, Cookie(alias='_popchat_auth')],
     JWT: Annotated[AuthJWT, Depends()]
-) -> UserOut:
+) -> UserBase:
     try:
         JWT.jwt_required()
     except Exception as err:
         raise HTTPException(status_code=401, detail='Invalid token')
 
-    user = db.get_by_auth_token(token)
+    user_id = cache.get(token)
+    user = db.get_by_id(User, str(user_id, encoding='utf-8'))
     if not user:
         raise HTTPException(status_code=401, detail='Invalid token')
 
@@ -100,15 +101,12 @@ def is_authenticated(
 async def logout(
     token: Annotated[str, Cookie(alias='_popchat_auth')]
 ) -> JSONResponse:
-    user = db.get_by_auth_token(token)
+    user_id = cache.get(token)
+    user = db.get_by_id(User, str(user_id, encoding='utf-8'))
     if not user:
         return HTTPException(status_code=401, detail='Invalid token')
 
-    user.auth_token = None
-    user.save()
-
     return JSONResponse({'detail': 'success'})
-
 
 @auth_router.get('/forgot_password')
 async def get_reset_token(email: str, response: JSONResponse) -> JSONResponse:
@@ -121,12 +119,36 @@ async def get_reset_token(email: str, response: JSONResponse) -> JSONResponse:
     user.save()
     response.headers['X-Reset-Token'] = reset_token
 
+    # FIXME: Add logic to send email to user with a link pointing to form
+    # where they can change password.
+    # format of link:
+    #        https://<domain>/reset_password/{reset_token}
+    #       HTTP method = GET
+
     return JSONResponse({'detail': 'success'})
 
+@auth_router.get('/reset_password/{reset_token}')
+async def get_reset_pass_form(reset_token: str):
+    """"""
+    user = db.get_by_reset_token(reset_token)
+    if not user:
+        return HTTPException(status_code=404, detail='No user found')
 
+    # TODO: Add logic to send password reset form to user
+    pass
+
+# TODO: Once user confirms through email and a reset token is created,
+# the token is used to access this endpoint that will reset the password
 @auth_router.post('/reset_password/{reset_token}}')
 async def reset_password(
     reset_token: str,
     new_password: Annotated[str, Form()]
 ):
-    pass
+    user = db.get_by_reset_token(reset_token)
+    if not user:
+        return HTTPException(status_code=404, detail='No user found')
+
+    user.set_password(new_password)
+    user.save()
+
+    return JSONResponse({'detail': 'New password created successfully'})
