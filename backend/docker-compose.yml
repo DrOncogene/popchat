@@ -1,0 +1,25 @@
+version: "2"
+services:
+  mongodb:
+    image: droncogene/popchat-mongodb:latest
+    volumes:
+      - /data/db:/data/db
+    ports:
+      - 27017:27017
+    restart: always
+
+  redis-cache:
+    image: redis:latest
+    ports:
+      - 6379:6379
+    restart: always
+
+  popchat-api:
+    depends_on:
+      - mongodb
+      - redis-cache
+    image: droncogene/popchat-api:latest
+    env_file:
+      - .env
+    ports:
+      - 8000:8000
