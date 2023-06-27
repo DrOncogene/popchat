@@ -26,7 +26,6 @@ class User(Base, Document):
     username = StringField(max_length=60, required=True, unique=True)
     email = StringField(max_length=60, required=True, unique=True)
     password = StringField(required=True)
-    auth_token = StringField(default=None)
     reset_token = StringField(default=None)
 
     def set_password(self, passwd: str) -> None:

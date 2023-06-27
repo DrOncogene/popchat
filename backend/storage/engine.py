@@ -1,12 +1,12 @@
 """
 the storage engine
 """
-from os import getenv
 from typing import Type
 from mongoengine import connect
 from mongoengine.queryset.visitor import Q
+from redis import Redis
 
-from config import DBSettings
+from config import DBSettings, RedisSettings
 from models.user import User
 from models.chat import Chat
 from models.room import Room
@@ -56,12 +56,6 @@ class Engine:
             return None
         return User.objects(email=email).first()
 
-    def get_by_auth_token(self, token: str) -> User | None:
-        """fetches a user by auth token"""
-        if token is None:
-            return None
-        return User.objects(auth_token=token).first()
-
     def get_by_reset_token(self, token: str) -> User | None:
         """fetches a user by reset token"""
         if token is None:
@@ -97,3 +91,45 @@ class Engine:
         variant_2 = Chat.objects(Q(user_1=user_2) & Q(user_2=user_1)).first()
 
         return variant_1 or variant_2
+
+
+class Cache:
+    """
+    a redis cache for storing session keys
+    """
+
+    settings = RedisSettings()
+    HOST = settings.REDIS_HOST
+    PORT = settings.REDIS_PORT
+    DB = settings.REDIS_DB
+    PASSWD = settings.REDIS_PASSWD
+    TTL = settings.REDIS_TTL
+
+    def __init__(self) -> None:
+        if self.PASSWD:
+            uri = (f'redis://:{self.PASSWD}@{self.HOST}'
+                   f':{self.PORT}/{self.DB}')
+        else:
+            uri = f'redis://{self.HOST}:{self.PORT}/{self.DB}'
+
+        self.redis = Redis.from_url(uri, password=self.PASSWD)
+
+    def ping(self) -> bool:
+        """checks if the cache is available"""
+        return self.redis.ping()
+
+    def get(self, key: str) -> str | None:
+        """fetches a value from the cache"""
+        if key is None:
+            return None
+
+        return self.redis.get(key)
+
+    def set(self, key: str, value: str) -> None:
+        """
+        sets a value in the cache with a ttl
+        """
+        if key is None or value is None:
+            return None
+
+        self.redis.setex(key, self.TTL, value)

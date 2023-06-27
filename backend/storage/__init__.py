@@ -2,8 +2,13 @@
 initialize a storage engine
 instance
 """
-from .engine import Engine
+from redis.exceptions import ConnectionError
+from .engine import Engine, Cache
 
 
 db = Engine()
 db.load()
+
+cache = Cache()
+if not cache.ping():
+    raise ConnectionError('redis cache is not available')
