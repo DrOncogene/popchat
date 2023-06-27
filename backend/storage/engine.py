@@ -1,5 +1,7 @@
+#!/usr/bin/env python3
+
 """
-the storage engine
+Defines the storage engine.
 """
 from typing import Type
 from mongoengine import connect
@@ -44,11 +46,13 @@ class Engine:
             return None
         return model.objects(id=id).first()
 
+
     def get_by_username(self, name: str) -> User | None:
         """fetches a user by username"""
         if name is None:
             return None
         return User.objects(username=name).first()
+
 
     def get_by_email(self, email: str) -> User | None:
         """fetches a user by email"""

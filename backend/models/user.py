@@ -20,7 +20,7 @@ class User(Base, Document):
     :param password: The password of the user, hashed
     :type password: `StringField`
 
-    auth
+    TODO : What's auth_token and reset_token for ??
     """
 
     username = StringField(max_length=60, required=True, unique=True)

@@ -1,6 +1,7 @@
+#!/usr/bin/env python3
+
 """
-initialize a storage engine
-instance
+Instantiates a database storage engine instance.
 """
 from redis.exceptions import ConnectionError
 from .engine import Engine, Cache

@@ -39,7 +39,7 @@ async def register(user: UserIn) -> JSONResponse:
     except Exception as err:
         raise HTTPException(status_code=500, detail='Error creating user')
 
-    return JSONResponse({"message": "login success"}, 201)
+    return JSONResponse({"message": "Registration success"}, 201)
 
 
 @auth_router.post('/login')
@@ -120,13 +120,27 @@ async def get_reset_token(email: str, response: JSONResponse) -> JSONResponse:
     user.save()
     response.headers['X-Reset-Token'] = reset_token
 
+    # FIXME: Add logic to send email to user with a link pointing to form
+    # where they can change password.
+    # format of link:
+    #        https://<domain>/reset_password/{reset_token}
+    #       HTTP method = GET
+
     return JSONResponse({'detail': 'success'})
 
 
-# TODO: implement this
+# TODO: Once user confirms through email and a reset token is created,
+# the token is used to access this endpoint that will reset the password
 @auth_router.post('/reset_password/{reset_token}}')
 async def reset_password(
     reset_token: str,
     new_password: Annotated[str, Form()]
 ):
-    pass
+    user = db.get_by_reset_token(reset_token)
+    if not user:
+        return HTTPException(status_code=404, detail='No user found')
+
+    user.set_password(new_password)
+    user.save()
+
+    return JSONResponse({'detail': 'New password created successfully'})

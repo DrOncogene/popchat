@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 """
 the wsgi server entry point
 """

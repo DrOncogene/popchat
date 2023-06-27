@@ -172,6 +172,78 @@ async def get_chat(sid: str, payload: dict) -> dict:
 
     return {'chat': chat, 'status': 200}
 
+@sio.on('get_room')
+async def get_room(sid: str, payload: dict) -> dict:
+    """Gets a room from the database and returns it
+    """
+    if not payload or len(payload) == 0:
+        return {
+            'error': 'Empty payload sent',
+            'status': 400
+        }
+
+    room_id = payload.get('id')
+    room = db.get_by_id(Room, room_id)
+
+    if not room:
+        return {
+            'error': 'No room found',
+            'status': 404
+        }
+
+    return {
+        'room': room.to_dict(),
+        'status': 200
+    }
+
+
+@sio.on('get_room')
+async def get_room(sid: str, payload: dict) -> dict:
+    """
+    fetches a room from the database and reformats
+    the messages to be grouped by date
+
+    :param sid: The socket id of the client
+    :param payload: The payload sent by the client
+    """
+
+    if not payload or len(payload) == 0:
+        return {'error': 'no room id', 'status': 400}
+
+    room_id = payload.get('id')
+    room = db.get_by_id(Room, room_id)
+    if room is None:
+        return {'error': 'invalid room id', 'status': 404}
+
+    room = room.to_dict()
+    room['messages'] = group_messages(room['messages'])
+
+    return {'room': room, 'status': 200}
+
+
+@sio.on('get_room')
+async def get_room(sid: str, payload: dict) -> dict:
+    """
+    fetches a room from the database and reformats
+    the messages to be grouped by date
+
+    :param sid: The socket id of the client
+    :param payload: The payload sent by the client
+    """
+
+    if not payload or len(payload) == 0:
+        return {'error': 'no room id', 'status': 400}
+
+    room_id = payload.get('id')
+    room = db.get_by_id(Room, room_id)
+    if room is None:
+        return {'error': 'invalid room id', 'status': 404}
+
+    room = room.to_dict()
+    room['messages'] = group_messages(room['messages'])
+
+    return {'room': room, 'status': 200}
+
 
 @sio.on('get_room')
 async def get_room(sid: str, payload: dict) -> dict:

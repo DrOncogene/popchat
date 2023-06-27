@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Models for the API."""
+"""Pydantic Models for the API."""
 import re
 
 from pydantic import BaseModel, EmailStr, Field
