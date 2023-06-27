@@ -102,7 +102,7 @@ async def logout(
     token: Annotated[str, Cookie(alias='_popchat_auth')]
 ) -> JSONResponse:
     user_id = cache.get(token)
-    user = db.get_by_id(User, user_id)
+    user = db.get_by_id(User, str(user_id, encoding='utf-8'))
     if not user:
         return HTTPException(status_code=401, detail='Invalid token')
 
