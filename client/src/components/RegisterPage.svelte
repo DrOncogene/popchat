@@ -93,12 +93,14 @@
         placeholder="Username"
         type="text"
         name="username"
+        autocomplete="on"
         errorMsg={[true, 'Username cannot be empty']}
       />
       <FormInput
         placeholder="Email"
         type="email"
         name="email"
+        autocomplete="on"
         errorMsg={[true, 'Enter a valid email addrress']}
       />
       <FormInput

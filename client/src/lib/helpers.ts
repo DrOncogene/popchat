@@ -209,9 +209,12 @@ function newChat(e: Event) {
     // @ts-ignore
     if (chat.user_1 === username || chat.user_2 === username) {
       // @ts-ignore
-      chatStore.set(chat);
+      socket.emit('get_chat', {id: chat.id}, (payload) => {
+        chatStore.set(payload.chat);
+      });
       roomStore.set(null);
       changeState('home', chat.id, null);
+      document.querySelector('#details-popup').remove();
       return;
     }
   }
@@ -406,7 +409,7 @@ function addMember(e: Event) {
     id: get(roomStore).id,
     member: input.value.trim(),
     admin: get(user).username,
-    flag: 1,
+    flag: 10,
   };
 
   socket.emit('add_member', payload, (data) => {
@@ -439,7 +442,7 @@ function deleteMember(e: Event) {
     id: get(roomStore).id,
     member: username,
     admin: get(user).username,
-    flag: 0,
+    flag: 11,
   };
 
   socket.emit('remove_member', payload, (data) => {

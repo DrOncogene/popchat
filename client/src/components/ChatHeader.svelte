@@ -74,9 +74,11 @@
       />
     </form>
   </div>
+  {#if details.admins.includes($user.username)}
   <button on:click={displayEditForm} title="Edit name" class="absolute right-20" id="edit-btn">
     <PencilIcon size="1.5em" />
   </button>
+  {/if}
   <button on:click={closeDetails} title="close" class="absolute right-0 mx-5">
     <Close size="1.5em" />
   </button>
@@ -97,7 +99,7 @@
     <ProfileImage />
     <p class="text-lg font-bold ml-2">@{details.username}</p>
     {#if details.username !== $user.username}
-    <button title="Send message" on:click={newChat} class="ml-10">
+    <button title="Send message" data-username="{details.username}" on:click={newChat} class="ml-10">
       <MessageIcon size="1.5em" color="#1FDBA5" />
     </button>
     {/if}

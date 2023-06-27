@@ -81,6 +81,7 @@
         placeholder='Username'
         type='text'
         name='username'
+        autocomplete='on'
         errorMsg={[true, 'Enter your username']}
       />
       <FormInput
