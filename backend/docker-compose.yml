@@ -10,6 +10,8 @@ services:
 
   redis-cache:
     image: redis:latest
+    volumes:
+      - /data/redis:/data
     ports:
       - 6379:6379
     restart: always
@@ -19,7 +21,8 @@ services:
       - mongodb
       - redis-cache
     image: droncogene/popchat-api:latest
-    env_file:
-      - .env
+    environment:
+      - DB_HOST=mongodb
+      - REDIS_HOST=redis-cache
     ports:
       - 8000:8000
