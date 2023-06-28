@@ -48,3 +48,49 @@ def docker_setup(ctx):
         return
 
     print('\nDOCKER INSTALLED SUCCESSFULLY ✅')
+
+
+@task
+def nginx_setup(ctx):
+    """
+    installs nginx on the backend server
+    """
+    ctx.put('./setup-nginx.sh', '/tmp/popchat/setup_nginx.sh')
+    ctx.run('chmod +x /tmp/popchat/setup_nginx.sh')
+    ctx.run('sudo /tmp/popchat/setup_nginx.sh')
+
+
+@task
+def ssl_setup(ctx):
+    """
+    sets up ssl certificates on the server
+    using certbot
+    """
+    ctx.run('sudo snap install core; sudo snap refresh core')
+    ctx.run('sudo apt remove certbot')
+    ctx.run('sudo snap install --classic certbot')
+    ctx.run('sudo ln -s /snap/bin/certbot /usr/bin/certbot', warn=True)
+    ctx.run('sudo certbot -n --agree-tos --nginx -m mypythtesting@gmail.com -d\
+             popchat-api.droncogene.com')
+    ctx.run('sudo systemctl status snap.certbot.renew.service')
+    ctx.run('sudo certbot renew --dry-run')
+
+
+@task
+def ssl_reconfigure(ctx):
+    """
+    reconfigures nginx after ssl setup
+    """
+    ctx.run('sudo certbot --nginx reconfigure')
+    ctx.run('sudo nginx -t')
+    ctx.run('sudo systemctl restart nginx')
+
+
+@task
+def run_containers(ctx):
+    """
+    runs the docker containers
+    """
+    ctx.run('mkdir -p /tmp/popchat')
+    ctx.put('./docker-compose.yml', '/tmp/popchat/docker-compose.yml')
+    ctx.run('docker compose -f /tmp/popchat/docker-compose.yml up -d')
