@@ -16,7 +16,9 @@ from config import Settings
 
 
 ORIGINS = [
-    'http://localhost:5173'
+    'http://localhost:5173',
+    'http://localhost:80',
+    'https://popchat.droncogene.com',
 ]
 
 
