@@ -20,6 +20,7 @@ Popchat is a real time web-based chat application built with websockets (ws)
     - Python-socketio
     - JWT authentication (fastapi_jwt_auth)
     - Database: MongoDB
+    - Cache: Redis
     - Docker
     - NGINX
     - RabbitMQ
