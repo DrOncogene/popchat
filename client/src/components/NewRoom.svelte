@@ -2,8 +2,14 @@
   import FormInput from './FormInput.svelte';
   import Close from 'svelte-material-icons/Close.svelte';
   import Button from './Button.svelte';
-  import { changeState, fetchCurrentChatOrRoom, fetchUserChats, showFormError, toggleRoomWidget } from '../lib/helpers';
-  import { user, state, roomStore, activeChats as chatsAndRooms } from '../lib/store';
+  import {
+    changeState,
+    fetchCurrentChatOrRoom,
+    fetchUserChats,
+    showFormError,
+    switchView,
+    toggleRoomWidget } from '../lib/helpers';
+  import { user, roomStore } from '../lib/store';
   import socket from '../lib/socket';
 
   function createRoom(e: SubmitEvent) {
@@ -31,7 +37,7 @@
 
     socket.emit('create_room', payload, (payload) => {
       if (payload.status !== 201) {
-        showFormError('User does not exist', memberInput);
+        showFormError('User(s) does not exist', memberInput);
         return;
       }
       const newRoom: Room = payload.room;
@@ -41,6 +47,7 @@
       roomStore.set(newRoom);
       fetchCurrentChatOrRoom();
       toggleRoomWidget(e);
+      switchView(e);
     });
   }
 </script>

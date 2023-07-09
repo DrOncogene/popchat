@@ -1,6 +1,6 @@
 <script lang="ts">
   import { slide } from 'svelte/transition';
-  import { state, user } from '../lib/store';
+  import { user } from '../lib/store';
   import socket from '../lib/socket';
   import {
     validateInput,
@@ -43,17 +43,14 @@
       }
 
       const payload = await response.json();
-      document.querySelector('#loader').classList.remove('hidden');
+      document.querySelector('#loader').classList.toggle('hidden');
       document.querySelector('#loader').classList.add('flex');
-      document
-        .querySelector('#login-form h1, #login-form form')
-        .classList.toggle('hidden');
       setTimeout(() => {
         user.set(payload);
         socket.auth = {id: $user.id};
         socket.connect();
         changeState('home');
-      }, 1000);
+      }, 2000);
     } catch (error) {
       console.log(error);
       showFormError(`Server error, try again later`);
@@ -66,16 +63,17 @@
   };
 </script>
 
-<div in:slide class="max-w-[1040px] h-[500px] m-auto flex justify-center items-center md:space-x-32 p-10">
+<div in:slide class="max-w-[1040px] h-full m-auto flex justify-center items-center md:space-x-32">
   <div class=" border-r-2 border-r-gray-500 p-8 hidden md:block">
     <img src="./img/popchat-logo.png" alt="" width="250" height="250">
   </div>
-  <div class="relative flex flex-col justify-between items-center space-y-4 shadow-2xl p-10" id="login-form">
-    <div class="hidden bg-pri-900 w-full h-full absolute top-0 left-0 items-center justify-center" id="loader">
-      <div class="loader">Loading...</div>
+  <div class="relative flex flex-col justify-center items-center space-y-4 shadow-2xl p-10 w-[90%] h-max md:h-min md:w-min md:bg-none bg-logo" id="login-form">
+    <div class="form-cover md:hidden"></div>
+    <div class="hidden bg-pri-900 w-full h-full absolute top-0 left-0 items-center justify-center z-[500]" id="loader">
+      <span class="loader z-[500]"></span>
     </div>
-    <h1 class="text-xl font-bold md:text-2xl">LOGIN TO CONTINUE</h1>
-    <form on:submit={async (e) => {await login(e)}} action="#" class="flex flex-col w-[max-content] m-auto">
+    <h1 class="text-xl font-bold md:text-2xl z-50">LOGIN TO CONTINUE</h1>
+    <form on:submit={async (e) => {await login(e)}} class="flex flex-col w-[max-content] m-auto z-50">
       <p class="text-red-500 mb-3 w-full text-center text-sm invisible" id="form-errors">An error</p>
       <FormInput
         placeholder='Username'
@@ -97,7 +95,7 @@
         type='submit'
         styles='bg-sec-900 w-full font-bold mt-10 mb-8'
       />
-      <p class="text-center italic font-light text-xs md:text-sm">Don't have an account? <a href="/" on:click={goToSignUp} class="text-[#1FDBA5] ml-3 hover:border-b hover:border-b-[#1FDBA5] not-italic font-semibold">Sign Up</a></p>
+      <p class="text-center italic font-light text-xs md:text-sm">Don't have an account? <span on:click={goToSignUp} on:keydown={goToSignUp}  tabindex="0" class="cursor-pointer text-sec-900 ml-3 hover:border-b hover:border-b-sec-900 not-italic font-semibold">Sign Up</span></p>
     </form>
   </div>
 </div>

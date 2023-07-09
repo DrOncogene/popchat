@@ -21,7 +21,7 @@
   });
 </script>
 
-<main class="md:p-8 w-full h-full">
+<main class="md:p-8 w-full h-full overflow-hidden">
 {#if $state.page === 'register'}
   <RegisterPage />
 {:else if $state.page === 'login'}
@@ -32,6 +32,7 @@
   {/if}
 {/if}
 </main>
+<footer class="hidden italic font-thin text-xs opacity-50 w-[100vw] absolute bottom-0 left-0 py-4 md:flex justify-center items-center">Copyright &copy; 2023 Oncogene Studios</footer>
 
 <style>
   

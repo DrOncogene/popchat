@@ -31,64 +31,89 @@ body {
   .selected-chat {
     @apply bg-sec-700
   }
+
+  @media (max-width: 768px) {
+    .bg-logo {
+      background-image: url('../img/popchat-logo.png');
+      background-repeat: no-repeat;
+      background-position: top right;
+      background-size: 500px;
+    }
+    .left-out {
+      @apply -translate-x-full ease-in;
+    }
+    .right-in {
+      @apply translate-x-0 ease-in;
+    }
+    .sm-show {
+      transform: translateX(0);
+    }
+  }
+  .form-cover {
+    background-color: rgba(37, 54, 64, 0.8);
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+  }
 }
 
-.loader,
-.loader:before,
-.loader:after {
-  background: #ffffff;
-  -webkit-animation: load1 1s infinite ease-in-out;
-  animation: load1 1s infinite ease-in-out;
-  width: 1em;
-  height: 4em;
-}
 .loader {
-  color: #ffffff;
-  text-indent: -9999em;
-  margin: 88px auto;
+  width: 48px;
+  height: 48px;
+  margin: auto;
   position: relative;
-  font-size: 11px;
-  -webkit-transform: translateZ(0);
-  -ms-transform: translateZ(0);
-  transform: translateZ(0);
-  -webkit-animation-delay: -0.16s;
-  animation-delay: -0.16s;
-}
-.loader:before,
-.loader:after {
-  position: absolute;
-  top: 0;
-  content: '';
 }
 .loader:before {
-  left: -1.5em;
-  -webkit-animation-delay: -0.32s;
-  animation-delay: -0.32s;
-}
-.loader:after {
-  left: 1.5em;
-}
-@-webkit-keyframes load1 {
-  0%,
-  80%,
+    content: '';
+    width: 48px;
+    height: 5px;
+    background: #000;
+    opacity: 0.25;
+    position: absolute;
+    top: 60px;
+    left: 0;
+    border-radius: 50%;
+    animation: shadow 0.5s linear infinite;
+  }
+  .loader:after {
+    content: '';
+    width: 100%;
+    height: 100%;
+    background: #fff;
+    animation: bxSpin 0.5s linear infinite;
+    position: absolute;
+    top: 0;
+    left: 0;
+    border-radius: 4px;
+  }
+@keyframes bxSpin {
+  17% {
+    border-bottom-right-radius: 3px;
+  }
+  25% {
+    transform: translateY(9px) rotate(22.5deg);
+  }
+  50% {
+    transform: translateY(18px) scale(1, .9) rotate(45deg);
+    border-bottom-right-radius: 40px;
+  }
+  75% {
+    transform: translateY(9px) rotate(67.5deg);
+  }
   100% {
-    box-shadow: 0 0;
-    height: 4em;
-  }
-  40% {
-    box-shadow: 0 -2em;
-    height: 5em;
+    transform: translateY(0) rotate(90deg);
   }
 }
-@keyframes load1 {
-  0%,
-  80%,
-  100% {
-    box-shadow: 0 0;
-    height: 4em;
+
+@keyframes shadow {
+  0%, 100% {
+    transform: scale(1, 1);
   }
-  40% {
-    box-shadow: 0 -2em;
-    height: 5em;
+  50% {
+    transform: scale(1.2, 1);
   }
 }
+
+

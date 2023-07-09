@@ -8,10 +8,10 @@
 </script>
 
 {#key $chatStore || $roomStore}
-<ul class="flex flex-col flex-nowrap w-full overflow-x-hidden overflow-y-auto" id="chat-list">
+<ul class="flex flex-col flex-nowrap w-full h-min overflow-x-hidden overflow-y-auto" id="chat-list">
 {#each [...activeChats].reverse() as chat (chat.id)}
 {@const current = $chatStore ? $chatStore : $roomStore}
-{@const selected = current && chat.id === current.id ? 'bg-sec-700' : ''}
+{@const selected = current && chat.id === current.id ? 'md:bg-sec-700' : ''}
 <li animate:flip={{duration: 500}}  on:click={ (e) => openChat(e) } on:keypress={ (e) => openChat(e) } data-type="{chat.type}" data-id="{chat.id}" class="flex shrink-0 items-center space-x-2 h-[60px] py-2 px-6 mb-0.5 cursor-pointer hover:bg-sec-700 overflow-hidden transition-all duration-250 {selected}">
   <ProfileImage />
   <div class="flex flex-col overflow-hidden">

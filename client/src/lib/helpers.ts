@@ -4,7 +4,8 @@ import {
   user,
   activeChats as chatsAndRoomsStore,
   chatStore,
-  roomStore } from '../lib/store';
+  roomStore
+} from '../lib/store';
 import socket from "./socket";
 import DetailsView from "../components/DetailsView.svelte";
 
@@ -29,7 +30,7 @@ function changeState(
   chat: string = null,
   room: string = null) {
   const newState: State = {
-    page: page, 
+    page: page,
     chat: chat,
     room: room
   };
@@ -41,11 +42,11 @@ function changeState(
 async function fetchUser() {
   const url = `${SERVER_URL}/api/auth/is_authenticated`;
   try {
-    const resp = await fetch(url, 
-    {
-      credentials: 'include',
-      mode: 'cors',
-    }).then(res => res);
+    const resp = await fetch(url,
+      {
+        credentials: 'include',
+        mode: 'cors',
+      }).then(res => res);
 
     if (resp.status === 200) {
       const userData: User = await resp.json();
@@ -61,11 +62,11 @@ async function fetchUser() {
 
 }
 
-function fetchCurrentChatOrRoom () {
+function fetchCurrentChatOrRoom() {
   const chatId = get(state).chat;
   const roomId = get(state).room;
   if (chatId) {
-    socket.emit('get_chat', {id: chatId}, (payload) => {
+    socket.emit('get_chat', { id: chatId }, (payload) => {
       if (payload.status !== 200) return;
       chatStore.set(payload.chat);
       roomStore.set(null);
@@ -73,7 +74,7 @@ function fetchCurrentChatOrRoom () {
     return;
   }
 
-  socket.emit('get_room', {id: roomId}, (payload) => {
+  socket.emit('get_room', { id: roomId }, (payload) => {
     if (payload.status !== 200) return;
     roomStore.set(payload.room);
     chatStore.set(null);
@@ -82,7 +83,7 @@ function fetchCurrentChatOrRoom () {
 
 function fetchUserChats() {
   const userId = get(user).id;
-  socket.emit('get_user_chats', {id: userId}, (payload) => {
+  socket.emit('get_user_chats', { id: userId }, (payload) => {
     if (payload.status !== 200) return;
     chatsAndRoomsStore.set(payload.all);
   });
@@ -170,7 +171,7 @@ function openChat(e: Event) {
     || target.parentElement.parentElement.dataset.type;
   const event = type === 'chat' ? 'get_chat' : 'get_room';
 
-  socket.emit(event, {id: id}, (payload) => {
+  socket.emit(event, { id: id }, (payload) => {
     if (payload.status !== 200) return;
 
     const detailPopup = document.querySelector('#details-popup');
@@ -180,11 +181,14 @@ function openChat(e: Event) {
       chatStore.set(payload.chat);
       roomStore.set(null);
       changeState('home', payload.chat.id, null);
-      return;
+    } else {
+      roomStore.set(payload.room);
+      chatStore.set(null);
+      changeState('home', null, payload.room.id);
     }
-    roomStore.set(payload.room);
-    chatStore.set(null);
-    changeState('home', null, payload.room.id);
+
+    target.scrollIntoView();
+    switchView(e);
   });
 }
 
@@ -209,12 +213,13 @@ function newChat(e: Event) {
     // @ts-ignore
     if (chat.user_1 === username || chat.user_2 === username) {
       // @ts-ignore
-      socket.emit('get_chat', {id: chat.id}, (payload) => {
+      socket.emit('get_chat', { id: chat.id }, (payload) => {
         chatStore.set(payload.chat);
       });
       roomStore.set(null);
       changeState('home', chat.id, null);
       document.querySelector('#details-popup').remove();
+      switchView(e);
       return;
     }
   }
@@ -223,6 +228,7 @@ function newChat(e: Event) {
   roomStore.set(null);
   changeState('home', null, null);
   document.querySelector('#details-popup').remove();
+  switchView(e);
 }
 
 function showDetails(e: Event, type: string = null) {
@@ -230,7 +236,13 @@ function showDetails(e: Event, type: string = null) {
 
   const id = (<HTMLAnchorElement>e.target).parentElement.dataset.id;
   const username = (<HTMLAnchorElement>e.target).parentElement.dataset.username;
-  const target = document.querySelector('.main-section .left');
+  let target = document.querySelector('.main-section .right');
+
+  if (!target.classList.contains('right-in') && window.innerWidth < 768) {
+    target = document.querySelector('.main-section .left');
+  }
+
+  document.querySelector('#details-popup')?.remove();
 
   if (type) {
     const current = get(chatStore) ? get(chatStore) : get(roomStore);
@@ -276,16 +288,16 @@ function formatDate(date: string, time = false) {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
-    
+
   });
   const today = new Date();
   const yesterday = new Date(today);
   const d = new Date(date);
 
-  yesterday.setDate(today.getDate() -  1);
+  yesterday.setDate(today.getDate() - 1);
 
   if (time) {
-    return d.toLocaleTimeString(undefined, {timeStyle: 'short'});
+    return d.toLocaleTimeString(undefined, { timeStyle: 'short' });
   }
 
   if (f.format(d) === f.format(today)) return 'Today';
@@ -308,9 +320,9 @@ function sendMessage(e: SubmitEvent) {
   };
 
   const payload = {
-    type: get(chatStore) ? 'chat': 'room',
+    type: get(chatStore) ? 'chat' : 'room',
     id: current.id,
-    message: message 
+    message: message
   };
 
   if (current.id === null) {
@@ -359,7 +371,7 @@ function sendMessage(e: SubmitEvent) {
   });
 }
 
-function addMessageToChat (chat: Chat | Room, message: Message) {
+function addMessageToChat(chat: Chat | Room, message: Message) {
   let found = false;
   const date = message.when.split('T')[0];
 
@@ -380,7 +392,7 @@ function addMessageToChat (chat: Chat | Room, message: Message) {
   return chat;
 }
 
-function updateChatList (chatId: string, message: Message) {
+function updateChatList(chatId: string, message: Message) {
   const chatsAndRooms = get(chatsAndRoomsStore);
   const chatToUpdate = chatsAndRooms.find((chat) => {
     if (chat.id === chatId) return true;
@@ -425,7 +437,7 @@ function addMember(e: Event) {
 
     document.querySelector('#details-popup').remove();
     const detailPopup = new DetailsView({
-      target: document.querySelector('.main-section .left'),
+      target: document.querySelector('.main-section .right'),
       props: {
         details: data.room,
       }
@@ -455,7 +467,7 @@ function deleteMember(e: Event) {
 
     document.querySelector('#details-popup').remove();
     const detailPopup = new DetailsView({
-      target: document.querySelector('.main-section .left'),
+      target: document.querySelector('.main-section .right'),
       props: {
         details: data.room,
       }
@@ -478,19 +490,28 @@ function editRoomName(e: Event) {
   console.log(payload)
 
   socket.emit('edit_room_name', payload, (data) => {
-    console.log(data)
+    console.log('return', data)
     if (data.status !== 201) return;
 
     roomStore.set(data.room);
 
     document.querySelector('#details-popup').remove();
     const detailPopup = new DetailsView({
-      target: document.querySelector('.main-section .left'),
+      target: document.querySelector('.main-section .right'),
       props: {
         details: data.room,
       }
     });
   });
+}
+
+function switchView(e: Event) {
+  e.preventDefault();
+
+  if (window.innerWidth < 768) {
+    document.querySelector('.main-section .left').classList.toggle('left-out');
+    document.querySelector('.main-section .right').classList.toggle('right-in');
+  }
 }
 
 export {
@@ -516,4 +537,5 @@ export {
   addMember,
   deleteMember,
   editRoomName,
+  switchView,
 };

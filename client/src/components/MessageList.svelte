@@ -16,7 +16,7 @@
   };
 </script>
 
-<div class="h-[475px] pb-[85px] w-full flex flex-col-reverse overflow-auto" id="message-list">
+<div class="h-full pb-[160px] w-full flex flex-col-reverse overflow-auto" id="message-list">
   {#each [...messages].reverse() as dayMessages}
   {@const day = formatDate(dayMessages[0])}
   <ul transition:slide={{duration:200}} class="w-full flex flex-col items-end">
