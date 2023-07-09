@@ -1,2 +1,6 @@
 .env
 __pycache__
+Dockerfile
+docker-compose.yml
+*.sh
+fabfile.py

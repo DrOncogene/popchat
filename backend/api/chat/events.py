@@ -172,6 +172,7 @@ async def get_chat(sid: str, payload: dict) -> dict:
 
     return {'chat': chat, 'status': 200}
 
+
 @sio.on('get_room')
 async def get_room(sid: str, payload: dict) -> dict:
     """Gets a room from the database and returns it
