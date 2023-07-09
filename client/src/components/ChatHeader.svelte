@@ -2,12 +2,14 @@
   import Close from 'svelte-material-icons/Close.svelte';
   import MessageIcon from 'svelte-material-icons/MessageText.svelte';
   import PencilIcon from 'svelte-material-icons/Pencil.svelte';
+  import ChevronLeft from 'svelte-material-icons/ChevronLeft.svelte';
   import {
     showDetails,
     newChat,
     closeDetails,
     formatDate,
-    editRoomName } from '../lib/helpers';
+    editRoomName,
+    switchView } from '../lib/helpers';
   import { chatStore, roomStore, user } from "../lib/store";
   import ProfileImage from "./ProfileImage.svelte";
   import FormInput from './FormInput.svelte';
@@ -23,17 +25,21 @@
     document.getElementById('room-name-div').classList.toggle('hidden');
     document.getElementById('edit-room-form').classList.toggle('hidden');
     document.getElementById('edit-btn').classList.toggle('hidden');
+    document.querySelector('#details-popup .header .avatar')?.classList.toggle('hidden');
   }
 </script>
 
-<div id="" class="relative header h-[75px] w-full border-b border-b-gray-500 flex items-center flex-nowrap py-4 px-6">
+<div id="" class="relative header h-[75px] w-full border-b border-b-gray-500 flex items-center flex-nowrap p-3 md:py-4 md:px-6">
 {#if !details}
 <!-- for chat/room views -->
   {#if $roomStore}
   <div data-id="{ $roomStore.id }" class="w-full flex flex-nowrap items-center">
+    <button on:click={switchView} class="md:hidden -ml-4">
+      <ChevronLeft size="4em"/>
+    </button>
     <ProfileImage />
     <button title="Click to show details" on:click={e => showDetails(e, 'room')} class="block ml-3">
-      <p class="text-lg font-bold">{$roomStore.name}</p>
+      <p class="text-base md:text-lg font-bold">{$roomStore.name}</p>
       <p class="text-sm font-thin italic text-left">{$roomStore.members.length}  members</p>
     </button>
   </div>
@@ -41,6 +47,9 @@
   {@const members = [$chatStore.user_1, $chatStore.user_2]}
   {@const user2 = members[0] === $user.username ? members[1] : members[0]}
   <div data-id="{ $chatStore.id }" class="w-full flex flex-nowrap items-center">
+    <button on:click={switchView} class="md:hidden mr-2">
+      <ChevronLeft size="4em"/>
+    </button>
     <ProfileImage />
     <a on:click={e => showDetails(e, 'chat')} href="/" class="block ml-3">@{user2}</a>
   </div>
@@ -60,16 +69,16 @@
         styles="rounded-3xl"
       />
       <Button
-        dim={[4, 2]}
+        dim={[2, 1]}
         type="submit"
         text="Save"
-        styles="font-bold text-xs"
+        styles="md:font-bold text-xs md:px-4 md:py-2"
         onClick={editRoomName}
       />
       <Button
-        dim={[4, 2]}
+        dim={[2, 1]}
         text="Cancel"
-        styles="font-bold text-xs"
+        styles="md:font-bold text-xs md:px-4 md:py-2"
         onClick={displayEditForm}
       />
     </form>

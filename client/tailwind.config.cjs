@@ -6,9 +6,6 @@ module.exports = {
   ],
   theme: {
     extend: {
-      backgroundImage: {
-        'logo': '../assets/img/popchat-logo.png'
-      },
       colors: {
         'pri': {
           500: 'rgba(37, 54, 64, 0.5)',

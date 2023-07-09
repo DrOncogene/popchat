@@ -8,7 +8,7 @@
 </script>
 
 <ChatHeader />
-<div class="w-full min-h-[50vh] flex flex-col justify-center items-center">
+<div class="w-full h-full flex flex-col justify-center items-center">
   {#if $roomStore || $chatStore}
     <MessageList />
   {/if}

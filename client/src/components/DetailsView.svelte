@@ -28,8 +28,8 @@
 
 {#key details}
 {#if details}
-<div id="details-popup" class="absolute top-0 left-0 h-full w-full px-5 z-[500] flex justify-center items-end bg-transparent backdrop-blur-sm">
-  <div transition:fly={{ duration: 2000, y: 200 }} class="w-5/6 h-5/6 bg-dark-sec overflow-auto backdrop-blur-lg">
+<div id="details-popup" class="absolute top-0 left-0 h-full w-full lg:px-5 z-[500] flex justify-center items-end bg-transparent backdrop-blur-sm">
+  <div transition:fly={{ duration: 2000, y: 200 }} class="w-full lg:w-5/6 h-5/6 bg-dark-sec overflow-auto backdrop-blur-lg">
     <ChatHeader details={ details } />
     <div class="p-4">
       {#if 'type' in details && details.type === 'room'}
@@ -45,7 +45,7 @@
         </div>
         {#if details.admins.includes($user.username)}
         <form id="add-member-form" class="flex justify-between items-center hidden">
-          <div>
+          <div class="flex items-center">
             <FormInput
               name='add-member-input'
               styles='rounded-3xl'

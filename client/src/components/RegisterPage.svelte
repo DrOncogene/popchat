@@ -51,9 +51,12 @@
           showFormError('Email already exist', emailInput);
         return;
       }
-      user.set(payload.user);
-      $state.page = 'login';
-      changeState('login');
+      document.querySelector('#loader').classList.remove('hidden');
+      document.querySelector('#loader').classList.add('flex');
+      setTimeout(() => {
+        user.set(payload.user);
+        changeState('login');
+      }, 2000);
     } catch (err) {
       showFormError(`network error: ${err}`);
     }
@@ -67,21 +70,26 @@
 
 <div
   in:slide
-  class="max-w-[1040px] m-auto flex justify-center items-center md:space-x-28"
+  class="max-w-[1040px] h-full m-auto flex justify-center items-center md:space-x-28"
 >
   <div class=" border-r-2 border-r-gray-500 p-8 pr-14 hidden md:block">
     <img src="./img/popchat-logo.png" alt="" width="250" height="250" />
   </div>
   <div
-    class="flex flex-col justify-center items-center space-y-2 shadow-2xl p-10"
+    class="flex flex-col justify-center items-center space-y-2 shadow-2xl p-10 w-[90%] h-max md:h-min md:w-min md:bg-none bg-logo"
+    id="register-form"
   >
-    <h1 class="text-xl font-bold md:text-2xl">CREATE AN ACCOUNT</h1>
+    <div class="form-cover md:hidden"></div>
+    <div class="hidden bg-pri-900 w-full h-full absolute top-0 left-0 items-center justify-center z-[500]" id="loader">
+      <span class="loader z-[500]"></span>
+    </div>
+    <h1 class="text-xl font-bold md:text-2xl z-50">CREATE AN ACCOUNT</h1>
     <form
       on:submit={async (e) => {
         await register(e);
       }}
       action="#"
-      class="flex flex-col min-w-[300px] m-auto"
+      class="flex flex-col min-w-[300px] m-auto z-50"
     >
       <p
         class="text-red-500 mb-3 w-full text-center text-sm invisible"
@@ -123,23 +131,17 @@
         styles="bg-sec-900 w-full font-bold mt-6 mb-2"
       />
       <p class="text-center italic font-light text-xs md:text-sm">
-        Already have an account? <a
-          href="/"
-          on:click={(e) => goToLogin(e)}
-          class="text-[#1FDBA5] ml-3 hover:border-b hover:border-b-[#1FDBA5] not-italic font-semibold"
-          >Log in</a
-        >
+        Already have an account? 
+        <span
+          on:click={goToLogin} on:keydown={goToLogin}
+          class="cursor-pointer text-sec-900 ml-3 hover:border-b hover:border-b-sec-900 not-italic font-semibold"
+          >Log in
+        </span>
       </p>
     </form>
   </div>
 </div>
 
 <style>
-  /* .bg-logo {
-    background-image: url('../assets/img/popchat-logo.png');
-    background-position: center;
-    background-repeat: no-repeat;
-    background-size: cover;
-    background-clip: padding-box;
-  } */
+
 </style>
