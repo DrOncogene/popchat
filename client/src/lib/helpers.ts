@@ -98,9 +98,9 @@ async function logout() {
     console.log('Logout failed');
     return;
   }
+  changeState('login', null, null);
   user.set(null);
   socket.disconnect();
-  changeState('login');
 }
 
 function validateInput(
@@ -197,6 +197,7 @@ function newChat(e: Event) {
   const username = target.parentElement.dataset.username ||
     target.parentElement.parentElement.dataset.username;
 
+  // @ts-ignore
   const chat: Chat = {
     id: null,
     user_1: get(user).username,
@@ -399,18 +400,30 @@ function updateChatList(chatId: string, message: Message) {
   });
 
   chatToUpdate.last_msg = message;
-  chatsAndRooms.forEach((chat) => {
-    if (chat.id === chatId) return chatToUpdate;
-    else return chat;
-  });
+  chatsAndRoomsStore.set(
+    chatsAndRooms.map((chat) => {
+      if (chat.id === chatId) return chatToUpdate;
+      else return chat;
+    })
+  );
 
-  chatsAndRooms.sort((a, b) => {
-    const aDate = new Date(a.last_msg.when);
-    const bDate = new Date(b.last_msg.when);
+  get(chatsAndRoomsStore).sort((a, b) => {
+    let aDate: Date, bDate: Date;
+
+    if (!a.last_msg)  {
+      aDate = new Date(a.created_at);
+    } else {
+      aDate = new Date(a.last_msg.when);
+    }
+
+    if (!b.last_msg)  {
+      bDate = new Date(b.created_at);
+    } else {
+      bDate = new Date(b.last_msg.when);
+    }
     // @ts-ignore
     return aDate - bDate;
   });
-  chatsAndRoomsStore.set(chatsAndRooms);
 }
 
 function addMember(e: Event) {

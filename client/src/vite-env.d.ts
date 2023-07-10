@@ -24,6 +24,7 @@ type DayMessages = [day: string, messages: Message[]]
 
 type Chat = {
   id: string;
+  created_at: string;
   last_msg: Message;
   type: string;
   user_1: string,
@@ -33,6 +34,7 @@ type Chat = {
 
 type Room = {
   id: string;
+  created_at: string;
   name: string;
   last_msg: Message;
   type: string;
