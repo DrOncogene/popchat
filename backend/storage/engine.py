@@ -135,3 +135,10 @@ class Cache:
             return None
 
         self.redis.setex(key, self.TTL, value)
+
+    def delete(self, key: str) -> None:
+        """deletes a value from the cache"""
+        if key is None:
+            return None
+
+        self.redis.delete(key)

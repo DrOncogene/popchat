@@ -91,7 +91,7 @@ def is_authenticated(
 
     user_id = cache.get(token)
     if user_id is None:
-        raise HTTPException(status_code=401, detail='Invalid token')
+        raise HTTPException(status_code=401, detail='Session expired')
 
     user = db.get_by_id(User, str(user_id, encoding='utf-8'))
     if not user:
@@ -105,10 +105,14 @@ async def logout(
     token: Annotated[str, Cookie(alias='_popchat_auth')]
 ) -> JSONResponse:
     user_id = cache.get(token)
+    if user_id is None:
+        raise HTTPException(status_code=401, detail='Invalid token')
+
     user = db.get_by_id(User, str(user_id, encoding='utf-8'))
     if not user:
         return HTTPException(status_code=401, detail='Invalid token')
 
+    cache.delete(token)
     return JSONResponse({'detail': 'success'})
 
 
