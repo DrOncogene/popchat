@@ -177,6 +177,7 @@ function openChat(e: Event) {
     const detailPopup = document.querySelector('#details-popup');
     if (detailPopup) detailPopup.remove();
 
+    updateChatList(id, null);
     if (type === 'chat') {
       chatStore.set(payload.chat);
       roomStore.set(null);
@@ -187,7 +188,7 @@ function openChat(e: Event) {
       changeState('home', null, payload.room.id);
     }
 
-    target.scrollIntoView();
+    // target.scrollIntoView();
     switchView(e);
   });
 }
@@ -197,23 +198,21 @@ function newChat(e: Event) {
   const username = target.parentElement.dataset.username ||
     target.parentElement.parentElement.dataset.username;
 
-  // @ts-ignore
-  const chat: Chat = {
+
+  const chat = {
     id: null,
     user_1: get(user).username,
     user_2: username,
     type: 'chat',
     messages: [],
     last_msg: null,
-  };
+  } as Chat;
 
-  const chats = get(chatsAndRoomsStore).filter((chat) => {
+  const chats = <Chat[]>get(chatsAndRoomsStore).filter((chat) => {
     return chat.type === 'chat';
   });
   for (const chat of chats) {
-    // @ts-ignore
     if (chat.user_1 === username || chat.user_2 === username) {
-      // @ts-ignore
       socket.emit('get_chat', { id: chat.id }, (payload) => {
         chatStore.set(payload.chat);
       });
@@ -327,15 +326,12 @@ function sendMessage(e: SubmitEvent) {
   };
 
   if (current.id === null) {
-    console.log(current)
     const newChatPayload = {
       creator: get(user).username,
-      // @ts-ignore
-      user_2: current.user_2,
+      user_2: (<Chat>current).user_2,
       message: message,
     };
     socket.emit('create_chat', newChatPayload, (data) => {
-      console.log(data)
       if (data.status !== 201) return;
 
       chatStore.set(data.chat);
@@ -355,13 +351,11 @@ function sendMessage(e: SubmitEvent) {
 
     current = addMessageToChat(current, message);
     if (get(chatStore)) {
-      // @ts-ignore
-      chatStore.set(current);
+      chatStore.set(<Chat>current);
       roomStore.set(null);
       changeState('home', current.id, null);
     } else {
-      // @ts-ignore
-      roomStore.set(current);
+      roomStore.set(<Room>current);
       chatStore.set(null);
       changeState('home', null, current.id)
     }
@@ -399,11 +393,22 @@ function updateChatList(chatId: string, message: Message) {
     if (chat.id === chatId) return true;
   });
 
+  if (!message) {
+    chatToUpdate.msgCount = 0;
+    return;
+  }
+
   chatToUpdate.last_msg = message;
+  if (chatToUpdate.msgCount) {
+    chatToUpdate.msgCount += 1;
+  } else {
+    chatToUpdate.msgCount = 1;
+  }
+
   chatsAndRoomsStore.set(
     chatsAndRooms.map((chat) => {
       if (chat.id === chatId) return chatToUpdate;
-      else return chat;
+      return chat;
     })
   );
 
@@ -518,12 +523,17 @@ function editRoomName(e: Event) {
   });
 }
 
-function switchView(e: Event) {
+function switchView(e: Event, openOrClose: string = 'open') {
   e.preventDefault();
 
   if (window.innerWidth < 768) {
     document.querySelector('.main-section .left').classList.toggle('left-out');
     document.querySelector('.main-section .right').classList.toggle('right-in');
+  }
+
+  if (openOrClose === 'close') {
+    roomStore.set(null);
+    chatStore.set(null);
   }
 }
 

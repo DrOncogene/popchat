@@ -30,6 +30,7 @@ type Chat = {
   user_1: string,
   user_2: string;
   messages: DayMessages[];
+  msgCount: number = 0;
 }
 
 type Room = {
@@ -43,6 +44,7 @@ type Room = {
   admins: string[];
   created_by: string;
   updated_at: string;
+  msgCount: 0;
 }
 
 interface User {

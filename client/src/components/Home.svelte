@@ -20,8 +20,6 @@
   import socket from '../lib/socket';
   import SearchResult from './SearchResult.svelte';
   import ChatView from './ChatView.svelte';
-  import DetailsView from './DetailsView.svelte';
-  import { fly } from 'svelte/transition';
 
   fetchUserChats();
   fetchCurrentChatOrRoom();
@@ -45,8 +43,7 @@
           // @ts-ignore
           chatName = chat.user_1 === $user.username ? chat.user_2 : chat.user_1;
         } else {
-          // @ts-ignore
-          chatName = chat.name.toLowerCase();
+          chatName = (<Room>chat).name.toLowerCase();
         }
         if (chatName.includes(term)) return chat;
       });
@@ -64,7 +61,8 @@
   $: activeChats = $allChats;
 </script>
 
-<section class="main-section flex items-center justify-center h-full w-full overflow-hidden">
+<section class="main-section relative flex items-center justify-center h-full w-full overflow-hidden">
+  <div class="toast-container absolute inset-0 w-full md:max-w-[1040px] h-[100px] rounded-md text-sm italic"></div>
   <div class="block md:grid md:grid-cols-home w-full md:max-w-[1040px] h-full md:h-[550px] md:m-auto bg-dark-pri shadow-xl shadow-black overflow-hidden">
     <aside class="left relative md:flex flex-col md:border-r md:border-r-gray-500 h-screen md:h-full w-full md:m-0 md:w-[350px] overflow-hidden transition-all duration-500">
       <div class="header h-[75px] flex justify-between items-center py-4 px-6 space-x-5 border-b border-b-gray-500">
