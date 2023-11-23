@@ -1,0 +1,39 @@
+[tool.poetry]
+name = "popchat-server"
+version = "0.0.2"
+description = "Backend for popchat - A real time chat application built with socket.IO and FastAPI"
+authors = ["Nasir Abdulrasheed <mypythtesting@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = {extras = ["all"], version = "^0.104.1"}
+bcrypt = "^4.0.1"
+httpx = "^0.25.0"
+redis = "^5.0.1"
+requests = "^2.31.0"
+python-socketio = "^5.10.0"
+loguru = "^0.7.2"
+python-decouple = "^3.8"
+python-multipart = "^0.0.6"
+werkzeug = "^3.0.1"
+beanie = "^1.23.1"
+fastapi-jwt = "^0.2.0"
+passlib = {extras = ["bcrypt"], version = "^1.7.4"}
+pydantic-settings = "^2.0.3"
+aio-pika = "^9.3.0"
+uvicorn = "^0.24.0.post1"
+
+
+[tool.poetry.group.dev.dependencies]
+better-exceptions = "^0.3.3"
+pytest = "^7.4.3"
+fabric2 = "^3.2.2"
+pylint = "^3.0.2"
+pycodestyle = "^2.11.1"
+autopep8 = "^2.0.4"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

@@ -34,7 +34,7 @@
 <!-- for chat/room views -->
   {#if $roomStore}
   <div data-id="{ $roomStore.id }" class="w-full flex flex-nowrap items-center">
-    <button on:click={switchView} class="md:hidden -ml-4">
+    <button on:click={e => switchView(e, 'close')} class="md:hidden -ml-4">
       <ChevronLeft size="4em"/>
     </button>
     <ProfileImage />

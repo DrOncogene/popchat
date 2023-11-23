@@ -24,15 +24,18 @@ type DayMessages = [day: string, messages: Message[]]
 
 type Chat = {
   id: string;
+  created_at: string;
   last_msg: Message;
   type: string;
   user_1: string,
   user_2: string;
   messages: DayMessages[];
+  msgCount: number = 0;
 }
 
 type Room = {
   id: string;
+  created_at: string;
   name: string;
   last_msg: Message;
   type: string;
@@ -41,6 +44,7 @@ type Room = {
   admins: string[];
   created_by: string;
   updated_at: string;
+  msgCount: 0;
 }
 
 interface User {
