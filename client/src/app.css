@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 body {
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: 'Roboto', sans-serif;
   min-height: 100vh;
 }
 
@@ -116,4 +116,6 @@ body {
   }
 }
 
-
+.swal2-timer-progress-bar {
+  @apply bg-sec-700;
+}

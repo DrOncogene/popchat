@@ -1,12 +1,12 @@
 <script lang="ts">
-  import { slide, fade } from 'svelte/transition';
-  import { state, user } from '../lib/store';
+  import { slide } from 'svelte/transition';
+  import { user } from '../lib/store';
   import {
     changeState,
     showFormError,
     validateInput,
     SERVER_URL
-  } from '../lib/helpers';
+  } from '../lib/utils';
   import Button from './Button.svelte';
   import FormInput from './FormInput.svelte';
 
@@ -44,10 +44,9 @@
       });
       const payload = await response.json();
       if (!response.ok) {
-        console.log('An error occurred', payload);
         if (payload.detail === 'username already exists')
           showFormError('Username already exists', userInput);
-        else if (payload.detail === 'username already exists')
+        else if (payload.detail === 'email already exists')
           showFormError('Email already exist', emailInput);
         return;
       }
@@ -79,11 +78,16 @@
     class="flex flex-col justify-center items-center space-y-2 shadow-2xl p-10 w-[90%] h-max md:h-min md:w-min md:bg-none bg-logo"
     id="register-form"
   >
-    <div class="form-cover md:hidden"></div>
-    <div class="hidden bg-pri-900 w-full h-full absolute top-0 left-0 items-center justify-center z-[500]" id="loader">
-      <span class="loader z-[500]"></span>
+    <div class="form-cover md:hidden" />
+    <div
+      class="hidden bg-pri-900 w-full h-full absolute top-0 left-0 items-center justify-center z-[500]"
+      id="loader"
+    >
+      <span class="loader z-[500]" />
     </div>
-    <h1 class="text-xl font-bold md:text-2xl z-50">CREATE AN ACCOUNT</h1>
+    <h1 class="text-xl font-bold md:text-2xl z-50 whitespace-nowrap">
+      CREATE AN ACCOUNT
+    </h1>
     <form
       on:submit={async (e) => {
         await register(e);
@@ -131,9 +135,10 @@
         styles="bg-sec-900 w-full font-bold mt-6 mb-2"
       />
       <p class="text-center italic font-light text-xs md:text-sm">
-        Already have an account? 
+        Already have an account?
         <span
-          on:click={goToLogin} on:keydown={goToLogin}
+          on:click={goToLogin}
+          on:keydown={goToLogin}
           class="cursor-pointer text-sec-900 ml-3 hover:border-b hover:border-b-sec-900 not-italic font-semibold"
           >Log in
         </span>
@@ -143,5 +148,4 @@
 </div>
 
 <style>
-
 </style>
