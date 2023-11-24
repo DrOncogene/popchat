@@ -15,4 +15,4 @@ if __name__ == '__main__':
     import uvicorn
     HOST = settings.APP_HOST
     PORT = settings.APP_PORT
-    uvicorn.run('main:app', host=HOST, port=PORT, reload=False, workers=5)
+    uvicorn.run('main:app', host=HOST, port=PORT, reload=True)
