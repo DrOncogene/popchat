@@ -9,8 +9,8 @@ sudo apt-get install -y --no-upgrade nginx
 sudo printf %s " upstream popchat-api {
         hash $request_uri consistent;
 
-        server chat-api:8000;
-        server chat-api:8001;
+        server 127.0.0.1:8000;
+        server 127.0.0.1:8001;
 }
 
 server {
@@ -22,11 +22,11 @@ server {
 
     location ~ /api {
         # Redirect to api
-        proxy_pass http://localhost:8000;
+        proxy_pass http://popchat-api;
     }
 
     location ~ /socket.io {
-        proxy_pass http://localhost:8000;
+        proxy_pass http://popchat-api;
         
         # Websocket Support
         proxy_http_version 1.1;
