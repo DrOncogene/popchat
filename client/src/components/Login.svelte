@@ -50,7 +50,7 @@
         changeState('home');
       }, 2000);
     } catch (error) {
-      showFormError(`Server error, try again later`);
+      showFormError(`Server not available, try again later`);
     }
   };
 
