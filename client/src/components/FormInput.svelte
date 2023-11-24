@@ -8,16 +8,36 @@
   export let autocomplete = 'off';
   export let textarea = false;
   export let onKeyUp = (e) => {};
-
 </script>
 
 {#if !textarea}
-  <input value="{value}" on:keyup={onKeyUp} placeholder={placeholder} type='{type}' name={name} id={name} class="peer py-2 px-3 rounded-md border border-gray-500 bg-transparent focus:outline focus:outline-1 focus:outline-sec-900 placeholder:text-xs {styles}" required autocomplete={autocomplete} />
+  <input
+    {value}
+    on:keyup={onKeyUp}
+    {placeholder}
+    {type}
+    {name}
+    id={name}
+    class="peer py-2 px-3 rounded-md border border-gray-500 bg-transparent focus:outline focus:outline-1 focus:outline-sec-900 placeholder:text-xs {styles}"
+    required
+    {autocomplete}
+  />
   {#if errorMsg[0]}
-    <p class="error-p mt-1 mb-3 invisible text-red-500 text-[10px] font-thin peer-invalid:visible">{errorMsg[1]}</p>
+    <p
+      class="error-p mt-1 mb-3 invisible text-red-500 text-[10px] font-thin peer-invalid:visible"
+    >
+      {errorMsg[1]}
+    </p>
   {/if}
 {:else}
-  <textarea placeholder={placeholder} name={name} id={name} class="peer min-h-[35px] py-2 px-3 rounded-md border border-gray-500 bg-transparent focus:outline focus:outline-1 focus:outline-sec-900 placeholder:text- placeholder:align-middle {styles}" required autocomplete={autocomplete} />
+  <textarea
+    {placeholder}
+    {name}
+    id={name}
+    class="peer min-h-[35px] py-2 px-3 rounded-md border border-gray-500 bg-transparent focus:outline focus:outline-1 focus:outline-sec-900 placeholder:text- placeholder:align-middle {styles}"
+    required
+    {autocomplete}
+  />
 {/if}
 
 <style>
