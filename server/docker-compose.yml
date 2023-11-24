@@ -1,4 +1,4 @@
-version: "2"
+version: "3"
 services:
   mongodb:
     image: mongo:latest
@@ -34,6 +34,8 @@ services:
       - rabbitmq
     image: droncogene/popchat-api:latest
     pull_policy: always
+    deploy:
+      replicas: 2
     environment:
       - DB_HOST=mongodb
       - REDIS_HOST=redis-cache
@@ -42,6 +44,7 @@ services:
       - APP_PORT=8000
     env_file:
       - ${ENV_FILE}
+    hostname: chat-api
     ports:
-      - 8000:8000
+      - 8000-8001:8000
     restart: always
