@@ -23,7 +23,7 @@ from app.middlewares.chat import (
     purge_room,
 )
 from app.schemas.models import ResponseModel
-from app.db import SOCKETIO_CACHE
+from app.db import SOCKETIO_CACHE, SESSION_CACHE
 
 
 @sio.on('connect')
@@ -45,7 +45,7 @@ async def connect(sid: str, environ: dict, auth: dict) -> bool:
         return False
 
     user = await fetch_user_by_id_or_username(user_id)
-    if user is None:
+    if user is None or not SESSION_CACHE.get(user_id):
         return False
 
     SOCKETIO_CACHE.setv(user_id, sid)

@@ -27,11 +27,12 @@ class Message(Document):
     @model_serializer
     def serialize_message(self) -> dict:
         """serializes the message"""
+        when_str = self.when.isoformat()
         return {
             'id': str(self.id),
             'text': self.text,
             'sender': self.sender,
-            'when': f'{self.when.isoformat()}Z',
+            'when': when_str if '+' in when_str else when_str + 'Z',
         }
 
     class Settings:
