@@ -1,15 +1,7 @@
 import { get } from 'svelte/store';
-import {
-  state,
-  user,
-  activeChats as chatsAndRoomsStore,
-  chatStore,
-  roomStore
-} from '../lib/store';
+import { state, user, chatStore, roomStore } from '../lib/store';
 import socket from './socket';
 import DetailsView from '../components/DetailsView.svelte';
-import notify from './notify';
-import { ADD_MEMBER, REMOVE_MEMBER, ADD_ADMIN, REMOVE_ADMIN } from './flags';
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL;
 
