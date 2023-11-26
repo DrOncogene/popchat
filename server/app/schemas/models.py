@@ -94,7 +94,10 @@ class MessageSchema(BaseModel):
     @field_serializer('when')
     def serialize_when(self, v: datetime) -> str:
         """serializes the when field"""
-        return v.isoformat() + 'Z'
+        v_str = v.isoformat()
+        if '+' in v_str:
+            return v_str
+        return v_str + 'Z'
 
 
 class DayMessages(BaseModel):
