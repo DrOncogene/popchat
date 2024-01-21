@@ -1,16 +1,13 @@
 #!/usr/bin/env bash
 
-nginx_conf_filename="popchat-api.conf"
-nginx_conf="/etc/nginx/sites-available/$nginx_conf_filename"
+nginx_conf_filename="default.conf"
+nginx_conf="/etc/nginx/conf.d/$nginx_conf_filename"
 
-sudo apt-get update
-sudo apt-get install -y --no-upgrade nginx
+printf %s " upstream popchat-api {
+        hash \$request_uri-\$http_user_agent-\$remote_addr consistent;
 
-sudo printf %s " upstream popchat-api {
-        hash $request_uri consistent;
-
-        server 127.0.0.1:8000;
-        server 127.0.0.1:8001;
+        server server-chat-api-1:8000;
+        server server-chat-api-2:8000;
 }
 
 server {
@@ -25,7 +22,7 @@ server {
         proxy_pass http://popchat-api;
     }
 
-    location ~ /socket.io {
+    location ~ /chat {
         proxy_pass http://popchat-api;
         
         # Websocket Support
@@ -37,10 +34,7 @@ server {
         proxy_no_cache \$http_upgrade;
     }
 }
-" | sudo tee "$nginx_conf" > /dev/null
+" | tee "$nginx_conf" > /dev/null
 
-sudo rm -f "/etc/nginx/sites-enabled/$nginx_conf_filename"
-sudo ln -s "$nginx_conf" /etc/nginx/sites-enabled/
-sudo nginx -t
-sudo systemctl restart nginx
-
+nginx -t
+nginx -g 'daemon off;'

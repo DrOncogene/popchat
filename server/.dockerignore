@@ -1,8 +1,10 @@
 .env
+.env.sample
 .venv
 .setenvs.sh
 __pycache__
 Dockerfile
 docker-compose.yml
-*.sh
+setup-nginx.sh
+test.yml
 fabfile.py
