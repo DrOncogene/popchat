@@ -2,12 +2,10 @@
 """
 init file - defines the factory function
 """
-from functools import lru_cache
 from contextlib import asynccontextmanager
 
 from socketio import AsyncServer, ASGIApp, AsyncAioPikaManager
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
 
@@ -16,19 +14,22 @@ from app.db import init_db, get_mongo_uri, get_rabbitmq_uri
 
 
 sio = AsyncServer(
-    async_mode='asgi',
+    async_mode="asgi",
     client_manager=AsyncAioPikaManager(get_rabbitmq_uri()),
-    cors_allowed_origins=[]
+    cors_allowed_origins=[],
 )
 
 sio_app = ASGIApp(
     socketio_server=sio,
+    socketio_path="",
 )
 
 ORIGINS = [
-    'http://127.0.0.1:5173',
-    'http://127.0.0.1:80',
-    'https://popchat.droncogene.com',
+    "http://127.0.0.1:5173",
+    "http://localhost:5173",
+    "http://127.0.0.1:80",
+    "http://localhost:80",
+    "https://popchat.droncogene.com",
 ]
 
 
@@ -48,14 +49,14 @@ def create_app() -> FastAPI:
         CORSMiddleware,
         allow_origins=ORIGINS,
         allow_credentials=True,
-        allow_methods=['*'],
-        allow_headers=['*'],
+        allow_methods=["*"],
+        allow_headers=["*"],
     )
     app.include_router(auth_router)
-    app.mount('/', app=sio_app)
+    app.mount("/chat", app=sio_app)
 
-    @app.get('/api')
+    @app.get("/api")
     async def root():
-        return {'message': 'Welcome to the PopChat API!'}
+        return {"message": "Welcome to the PopChat API!"}
 
     return app

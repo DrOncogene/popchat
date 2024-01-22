@@ -2,8 +2,9 @@
 chat middlewares
 """
 
-from beanie.operators import Or, In, And, RegEx, Push, AddToSet, Pull
-from beanie import PydanticObjectId, UpdateResponse
+from beanie.operators import Or, In, And, RegEx, AddToSet, Pull
+from beanie import PydanticObjectId
+from enum import Enum
 
 from app import sio
 from app.models.user import User
@@ -26,6 +27,23 @@ ADD_ADMIN = 20
 REMOVE_ADMIN = 21
 
 
+class Ops(Enum):
+    ADD_MEMBER = 10
+    RM_MEMBER = 11
+    ADD_ADMIN = 20
+    RM_ADMIN = 21
+
+    @classmethod
+    def is_admin(cls, value: int) -> bool:
+        """checks if the flag is an admin flag"""
+        return value in [cls.ADD_ADMIN, cls.RM_ADMIN]
+
+    @classmethod
+    def is_member(cls, value: int) -> bool:
+        """checks if the flag is a member flag"""
+        return value in [cls.ADD_MEMBER, cls.RM_MEMBER]
+
+
 async def users_search(user_id: str, term: str) -> list[dict]:
     """
     searches the users collection and return a list
@@ -38,10 +56,14 @@ async def users_search(user_id: str, term: str) -> list[dict]:
     if not term or not user_id:
         return []
 
-    matches = await User.find(
-        RegEx(User.username, term),
-        User.id != PydanticObjectId(user_id),
-    ).sort(+User.username).to_list()
+    matches = (
+        await User.find(
+            RegEx(User.username, term),
+            User.id != PydanticObjectId(user_id),
+        )
+        .sort(+User.username)
+        .to_list()
+    )
 
     return [user.model_dump() for user in matches]
 
@@ -80,7 +102,7 @@ async def fetch_user_chats(user: User) -> list[dict]:
     chats = await Chat.find(
         Or(
             Chat.user_1.username == user.username,
-            Chat.user_2.username == user.username
+            Chat.user_2.username == user.username,
         ),
         Chat.is_deleted == False,  # noqa E712
         projection_model=ChatSchema,
@@ -102,7 +124,7 @@ async def fetch_user_chats(user: User) -> list[dict]:
 async def add_message(
     c_id: str,
     msg: MessageSchema,
-    c_type: str
+    c_type: str,
 ) -> tuple[bool, ResponseModel | None]:
     """adds a new message to a room or chat
 
@@ -115,24 +137,24 @@ async def add_message(
 
     if not c_id or not msg or not c_type:
         return ResponseModel(
-            message='invalid payload',
+            message="invalid payload",
             status_code=400,
         )
 
-    if c_type == 'room':
+    if c_type == "room":
         cls = Room
-    elif c_type == 'chat':
+    elif c_type == "chat":
         cls = Chat
     else:
         return False, ResponseModel(
-            message='invalid chat type',
+            message="invalid chat type",
             status_code=400,
         )
 
     chat_or_room = await cls.find_one(cls.id == PydanticObjectId(c_id))
     if chat_or_room is None:
         return False, ResponseModel(
-            message='invalid chat or room id',
+            message="invalid chat or room id",
             status_code=404,
         )
 
@@ -148,7 +170,7 @@ async def add_message(
         return True, None
     except Exception as err:
         return False, ResponseModel(
-            message='failed to add message',
+            message="failed to add message",
             status_code=500,
         )
 
@@ -156,33 +178,33 @@ async def add_message(
 async def new_room(
     name: str,
     members: list[str],
-    creator: str
+    creator: str,
 ) -> tuple[Room | None, ResponseModel | None]:
     """creates a new room"""
 
     if not name or not creator or not members:
         return None, ResponseModel(
-            message='invalid payload',
+            message="invalid payload",
             status_code=400,
         )
 
     if len(members) == 0:
         return None, ResponseModel(
-            message='no member(s) to be added',
+            message="no member(s) to be added",
             status_code=400,
         )
 
     members_db = await User.find(In(User.username, members)).to_list()
     if len(members_db) != len(members):
         return None, ResponseModel(
-            message='invalid username(s)',
+            message="invalid username(s)",
             status_code=400,
         )
 
     creator_db = await fetch_user_by_id_or_username(creator)
     if creator_db is None:
         return None, ResponseModel(
-            message='invalid creator username',
+            message="invalid creator username",
             status_code=400,
         )
 
@@ -202,7 +224,7 @@ async def new_room(
         return new_room, None
     except Exception as err:
         return None, ResponseModel(
-            message='failed to create room',
+            message="failed to create room",
             status_code=500,
         )
 
@@ -210,24 +232,24 @@ async def new_room(
 async def new_chat(
     user_1: str,
     user_2: str,
-    msg: Message | None = None
+    msg: Message | None = None,
 ) -> tuple[Chat | None, ResponseModel | None]:
     """creates a new chat"""
 
     if not user_1 or not user_2 or not msg:
         return None, ResponseModel(
-            message='invalid payload',
+            message="invalid payload",
             status_code=400,
-            data=None
+            data=None,
         )
 
     try:
         msg = await Message(**msg).create()
     except Exception as err:
         return None, ResponseModel(
-            message='invalid message payload',
+            message="invalid message payload",
             status_code=400,
-            data=None
+            data=None,
         )
 
     users = await User.find(
@@ -235,28 +257,28 @@ async def new_chat(
     ).to_list()
     if len(users) != 2:
         return None, ResponseModel(
-            message='invalid username(s)',
+            message="invalid username(s)",
             status_code=400,
-            data=None
+            data=None,
         )
 
     existing_chat = await Chat.find_one(
         Or(
             And(
                 Chat.user_1.username == user_1,
-                Chat.user_2.username == user_2
+                Chat.user_2.username == user_2,
             ),
             And(
                 Chat.user_1.username == user_2,
-                Chat.user_2.username == user_1
+                Chat.user_2.username == user_1,
             ),
         ),
     )
     if existing_chat is not None:
         return None, ResponseModel(
-            message='chat already exists',
+            message="chat already exists",
             status_code=400,
-            data=None
+            data=None,
         )
 
     try:
@@ -268,16 +290,16 @@ async def new_chat(
         await new_chat.fetch_all_links()
         user_2_sid = SOCKETIO_CACHE.get(str(users[1].id))
         if user_2_sid:
-            data = {'id': str(new_chat.id), 'texter': user_1}
+            data = {"id": str(new_chat.id), "texter": user_1}
             await sio.enter_room(user_2_sid, str(new_chat.id))
-            await sio.emit('new_chat', data, to=user_2_sid)
+            await sio.emit("new_chat", data, to=user_2_sid)
 
         return new_chat, None
     except Exception as err:
         return None, ResponseModel(
-            message='failed to create chat',
+            message="failed to create chat",
             status_code=500,
-            data=None
+            data=None,
         )
 
 
@@ -290,38 +312,39 @@ async def add_or_remove_members(sid: str, payload: dict) -> dict:
     :param payload: the payload sent by the client
     """
 
-    room_id: str = payload.get('id')
-    members: list[str] = payload.get('members')
-    admin: str = payload.get('admin')
+    room_id: str = payload.get("id")
+    members: list[str] = payload.get("members")
+    admin: str = payload.get("admin")
 
     try:
-        flag = int(payload.get('flag'))
-        if flag not in [ADD_MEMBER, REMOVE_MEMBER]:
+        flag = int(payload.get("flag"))
+        if not Ops.is_member(flag):
             raise ValueError
     except (ValueError, TypeError):
         return ResponseModel(
-            message='invalid flag',
+            message="invalid flag",
             status_code=400,
         ).model_dump()
 
     if not members or not all([room_id, len(members), admin]):
         return ResponseModel(
-            message='invalid payload',
+            message="invalid payload",
             status_code=400,
         ).model_dump()
 
     room = await Room.find_one(Room.id == PydanticObjectId(room_id))
     if room is None:
         return ResponseModel(
-            message='invalid room id',
+            message="invalid room id",
             status_code=404,
         )
 
-    members_in_db = [await fetch_user_by_id_or_username(member)
-                     for member in members]
+    members_in_db = [
+        await fetch_user_by_id_or_username(member) for member in members
+    ]
     if None in members_in_db or len(members_in_db) == 0:
         return ResponseModel(
-            message='invalid member(s) username',
+            message="invalid member(s) username",
             status_code=404,
         ).model_dump()
 
@@ -329,17 +352,17 @@ async def add_or_remove_members(sid: str, payload: dict) -> dict:
     admin_in_db = await fetch_user_by_id_or_username(admin)
     if admin_in_db not in room.admins:
         return ResponseModel(
-            message='not an admin',
+            message="not an admin",
             status_code=403,
         ).model_dump()
     if set(members).intersection(set([ad.username for ad in room.admins])):
         return ResponseModel(
-            message='cannot remove admin, revoke admin privilege first',
+            message="cannot remove admin, revoke admin privilege first",
             status_code=403,
         ).model_dump()
 
     members_ref = [user.to_ref() for user in members_in_db]
-    if flag == ADD_MEMBER:
+    if flag == Ops.ADD_MEMBER.value:
         room = await room.update(
             AddToSet({Room.members: {"$each": members_ref}})
         )
@@ -350,24 +373,26 @@ async def add_or_remove_members(sid: str, payload: dict) -> dict:
     await room.save_changes()
     for member in members_in_db:
         data = {
-            'id': room_id,
-            'member': member.username,
-            'name': room.name,
-            'admin': admin
+            "id": room_id,
+            "member": member.username,
+            "name": room.name,
+            "admin": admin,
         }
         member_sid = SOCKETIO_CACHE.get(str(member.id))
         if member_sid:
             await sio.enter_room(member_sid, room_id)
-        if flag == ADD_MEMBER:
-            await sio.emit('add_to_room', ('new', data),
-                           to=room_id, skip_sid=sid)
+        if flag == Ops.ADD_MEMBER.value:
+            await sio.emit(
+                "add_to_room", ("new", data), to=room_id, skip_sid=sid
+            )
         else:
-            await sio.emit('remove_from_room', ('remove', data),
-                           to=room_id, skip_sid=sid)
+            await sio.emit(
+                "remove_from_room", ("remove", data), to=room_id, skip_sid=sid
+            )
 
     room = await Room.get(room.id, fetch_links=True)
     return ResponseModel(
-        message='success',
+        message="success",
         status_code=200,
         data=room.model_dump(),
     ).model_dump()
@@ -380,37 +405,37 @@ async def add_or_remove_admin(sid: str, payload: dict) -> dict:
     :param payload: the payload sent by the client
     """
 
-    room_id: str = payload.get('id')
-    member: str = payload.get('member')
-    admin: str = payload.get('admin')
+    room_id: str = payload.get("id")
+    member: str = payload.get("member")
+    admin: str = payload.get("admin")
 
     try:
-        flag = int(payload.get('flag'))
-        if flag not in [ADD_ADMIN, REMOVE_ADMIN]:
+        flag = int(payload.get("flag"))
+        if not Ops.is_admin(flag):
             raise ValueError
     except (ValueError, TypeError):
         return ResponseModel(
-            message='invalid flag',
+            message="invalid flag",
             status_code=400,
         ).model_dump()
 
     if not all([room_id, member, admin]):
         return ResponseModel(
-            message='invalid payload',
+            message="invalid payload",
             status_code=400,
         ).model_dump()
 
     room = await Room.find_one(Room.id == PydanticObjectId(room_id))
     if room is None:
         return ResponseModel(
-            message='invalid room id',
+            message="invalid room id",
             status_code=404,
         )
 
     member_in_db = await fetch_user_by_id_or_username(member)
     if not member_in_db:
         return ResponseModel(
-            message='invalid member username',
+            message="invalid member username",
             status_code=404,
         ).model_dump()
 
@@ -418,15 +443,15 @@ async def add_or_remove_admin(sid: str, payload: dict) -> dict:
     admin_in_db = await fetch_user_by_id_or_username(admin)
     if admin_in_db != room.creator:
         return ResponseModel(
-            message='not the creator',
+            message="not the creator",
             status_code=403,
         ).model_dump()
 
     data = {
-        'id': room_id,
-        'name': room.name,
-        'member': member,
-        'admin': admin
+        "id": room_id,
+        "name": room.name,
+        "member": member,
+        "admin": admin,
     }
     member_ref = member_in_db.to_ref()
     if flag == ADD_ADMIN:
@@ -435,19 +460,16 @@ async def add_or_remove_admin(sid: str, payload: dict) -> dict:
         room = await room.update(Pull({Room.admins: member_ref}))
 
     await room.save_changes()
-    if flag == ADD_ADMIN:
-        await sio.emit('add_admin', ('grant', data), to=room_id, skip_sid=sid)
+    if flag == Ops.ADD_ADMIN.value:
+        await sio.emit("add_admin", ("grant", data), to=room_id, skip_sid=sid)
     else:
         await sio.emit(
-            'remove_admin',
-            ('revoke', data),
-            to=room_id,
-            skip_sid=sid
+            "remove_admin", ("revoke", data), to=room_id, skip_sid=sid
         )
     room = await Room.get(room.id, fetch_links=True)
 
     return ResponseModel(
-        message='success',
+        message="success",
         status_code=200,
         data=room.model_dump(),
     ).model_dump()
@@ -455,7 +477,7 @@ async def add_or_remove_admin(sid: str, payload: dict) -> dict:
 
 async def exit_room_middleware(
     room_id: str,
-    user_id: str
+    user_id: str,
 ) -> tuple[str | None, ResponseModel | None]:
     """
     removes self from a room
@@ -468,14 +490,14 @@ async def exit_room_middleware(
 
     if not room_id or not user_id:
         return None, ResponseModel(
-            message='invalid payload',
+            message="invalid payload",
             status_code=400,
         )
 
     room = await Room.find_one(Room.id == PydanticObjectId(room_id))
     if room is None:
         return None, ResponseModel(
-            message='invalid room id',
+            message="invalid room id",
             status_code=404,
         )
 
@@ -483,21 +505,21 @@ async def exit_room_middleware(
     member = user.username
     if user is None:
         return None, ResponseModel(
-            message='invalid user id',
+            message="invalid user id",
             status_code=404,
         )
 
     await room.fetch_link(Room.creator)
     if user == room.creator:
         return None, ResponseModel(
-            message='creator cannot exit room, delete room instead',
+            message="creator cannot exit room, delete room instead",
             status_code=403,
         )
 
     await room.fetch_link(Room.members)
     if user not in room.members:
         return None, ResponseModel(
-            message='user not in room',
+            message="user not in room",
             status_code=400,
         )
 
@@ -510,7 +532,7 @@ async def exit_room_middleware(
 async def change_room_name(
     room_id: str,
     new_name: str,
-    admin: str
+    admin: str,
 ) -> tuple[Room | None, ResponseModel | None]:
     """
     changes the name of a room
@@ -521,27 +543,36 @@ async def change_room_name(
     """
 
     if not room_id or not new_name or not admin:
-        return None, ResponseModel(
-            message='invalid payload',
-            status_code=400,
-        ).model_dump()
+        return (
+            None,
+            ResponseModel(
+                message="invalid payload",
+                status_code=400,
+            ).model_dump(),
+        )
 
     room = await Room.find_one(
         Room.id == PydanticObjectId(room_id),
-        fetch_links=True
+        fetch_links=True,
     )
     if room is None:
-        return None, ResponseModel(
-            message='invalid room id',
-            status_code=404,
-        ).model_dump()
+        return (
+            None,
+            ResponseModel(
+                message="invalid room id",
+                status_code=404,
+            ).model_dump(),
+        )
 
     admin_in_db = await fetch_user_by_id_or_username(admin)
     if admin_in_db not in room.admins:
-        return None, ResponseModel(
-            message='not an admin',
-            status_code=403,
-        ).model_dump()
+        return (
+            None,
+            ResponseModel(
+                message="not an admin",
+                status_code=403,
+            ).model_dump(),
+        )
 
     room = await room.set({Room.name: new_name})
     await room.save_changes()
@@ -559,28 +590,28 @@ async def purge_room(room_id: str, user_id: str) -> ResponseModel:
 
     if not room_id or not user_id:
         return ResponseModel(
-            message='invalid payload',
+            message="invalid payload",
             status_code=400,
         )
 
     room = await Room.find_one(Room.id == PydanticObjectId(room_id))
     if room is None:
         return ResponseModel(
-            message='invalid room id',
+            message="invalid room id",
             status_code=404,
         )
 
     user = await fetch_user_by_id_or_username(user_id)
     if user is None:
         return ResponseModel(
-            message='invalid user id',
+            message="invalid user id",
             status_code=404,
         )
 
     await room.fetch_link(Room.creator)
     if user != room.creator:
         return ResponseModel(
-            message='cannot delete room, you are not the creator',
+            message="cannot delete room, you are not the creator",
             status_code=403,
         )
 
