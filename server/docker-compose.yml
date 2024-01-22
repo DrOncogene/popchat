@@ -1,5 +1,16 @@
 version: "3"
 services:
+  web:
+    image: nginx:latest
+    volumes:
+      - ./setup-nginx-docker.sh:/app/setup-nginx-docker.sh
+    entrypoint: /app/setup-nginx-docker.sh
+    ports:
+      - 80:80
+    depends_on:
+      - chat-api
+    restart: always
+
   mongodb:
     image: mongo:latest
     volumes:
@@ -41,10 +52,13 @@ services:
       - REDIS_HOST=redis-cache
       - RABBITMQ_HOST=rabbitmq
       - APP_HOST=0.0.0.0
-      - APP_PORT=8000
-    env_file:
-      - ${ENV_FILE}
     hostname: chat-api
     ports:
       - 8000-8001:8000
     restart: always
+    secrets:
+      - env_file
+
+secrets:
+  env_file:
+    file: ".env"
