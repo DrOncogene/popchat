@@ -13,18 +13,18 @@ from pydantic import (
     field_serializer,
     field_validator,
     model_serializer,
-    model_validator,
-    AliasChoices
+    AliasChoices,
 )
 from pydantic_core import PydanticCustomError
 
 
 class UserBase(BaseModel):
     """base user schema"""
+
     username: str | None = None
     email: EmailStr | None = None
 
-    @field_validator('username', mode='before')
+    @field_validator("username", mode="before")
     @classmethod
     def validate_username(cls, v: str):
         """validates username"""
@@ -34,14 +34,14 @@ class UserBase(BaseModel):
 
         if matches is None:
             raise PydanticCustomError(
-                'username_validation_error',
-                'username must start with a letter and'
-                ' be between 4 and 10 characters long'
+                "username_validation_error",
+                "username must start with a letter and"
+                " be between 4 and 10 characters long",
             )
 
         return v
 
-    @field_validator('password', check_fields=False, mode='before')
+    @field_validator("password", check_fields=False, mode="before")
     @classmethod
     def validate_password(cls, v: str):
         """validates password"""
@@ -52,10 +52,10 @@ class UserBase(BaseModel):
         )  # noqa: W605
         if not re.fullmatch(PASSWD_REGEX, v):
             raise PydanticCustomError(
-                'password_validation_error',
-                'password must be between 7 and 16 characters long'
-                ' and contain at least one uppercase, one lowercase,'
-                ' one number and one of special character in .+-=#_%|&@'
+                "password_validation_error",
+                "password must be between 7 and 16 characters long"
+                " and contain at least one uppercase, one lowercase,"
+                " one number and one of special character in .+-=#_%|&@",
             )
 
         return v
@@ -63,6 +63,7 @@ class UserBase(BaseModel):
 
 class UserRegister(UserBase):
     """user registration schema"""
+
     username: str
     email: EmailStr
     password: str
@@ -70,38 +71,42 @@ class UserRegister(UserBase):
 
 class UserLogin(UserBase):
     """user input schema"""
+
     password: str
 
 
 class UserOut(UserBase):
     """user return schema"""
-    id: str = Field(validation_alias=AliasChoices('_id', 'id'))
+
+    id: str = Field(validation_alias=AliasChoices("_id", "id"))
 
 
 class MessageSchema(BaseModel):
     """Schema model for the api"""
-    id: str | None = Field(validation_alias=AliasChoices('_id', 'id'))
+
+    id: str | None = Field(validation_alias=AliasChoices("_id", "id"))
     sender: str
     text: str
     when: datetime
 
-    @field_validator('id', mode='before')
+    @field_validator("id", mode="before")
     @classmethod
     def validate_id(cls, v: Any) -> str:
         """validates the id field"""
         return str(v)
 
-    @field_serializer('when')
+    @field_serializer("when")
     def serialize_when(self, v: datetime) -> str:
         """serializes the when field"""
         v_str = v.isoformat()
-        if '+' in v_str:
+        if "+" in v_str:
             return v_str
-        return v_str + 'Z'
+        return v_str + "Z"
 
 
 class DayMessages(BaseModel):
     """schema for messages grouped by day"""
+
     date: str
     messages: list[MessageSchema]
 
@@ -109,52 +114,55 @@ class DayMessages(BaseModel):
     def serialize_day_messages(self) -> dict:
         """serializes the day messages"""
         return {
-            'date': self.date,
-            'messages': [message.model_dump() for message in self.messages],
+            "date": self.date,
+            "messages": [message.model_dump() for message in self.messages],
         }
 
 
 class GenericChat(BaseModel):
     """base class for chat and room schemas"""
-    id: str = Field(validation_alias=AliasChoices('_id', 'id'))
+
+    id: str = Field(validation_alias=AliasChoices("_id", "id"))
     last_msg: MessageSchema | None
     updated_at: datetime | None = None
 
-    @field_validator('id', mode='before')
+    @field_validator("id", mode="before")
     @classmethod
     def validate_id(cls, v: Any) -> str:
         """validates the id field"""
         return str(v)
 
-    @field_serializer('updated_at', when_used='unless-none')
+    @field_serializer("updated_at", when_used="unless-none")
     def serialize_updated_at(self, v: datetime) -> str:
         """serializes the updated_at field"""
-        return v.isoformat() + 'Z'
+        return v.isoformat() + "Z"
 
 
 class ChatSchema(GenericChat):
     """chat model for the api"""
+
     user_1: str
     user_2: str
-    type: str = 'chat'
+    type: str = "chat"
 
-    @field_validator('user_1', 'user_2', mode='before')
+    @field_validator("user_1", "user_2", mode="before")
     @classmethod
     def validate_users(cls, v: str | dict) -> str:
         """validates the users field"""
         if isinstance(v, dict):
-            assert v.get('username'), 'user must have a username field'
-            return v.get('username')
+            assert v.get("username"), "user must have a username field"
+            return v.get("username")
 
         return v
 
 
 class ChatWithMessages(ChatSchema):
     """chat model for the api with messages"""
+
     members: list[str] | None = None
     messages: list[MessageSchema]
 
-    @field_serializer('messages', mode='plain', when_used='unless-none')
+    @field_serializer("messages", mode="plain", when_used="unless-none")
     def serialize_messages(self, v: list[MessageSchema]) -> list[dict]:
         """serializes the messages"""
         from app.utils import group_messages
@@ -164,20 +172,22 @@ class ChatWithMessages(ChatSchema):
 
 class RoomSchema(GenericChat):
     """room model for the api"""
+
     name: str
-    type: str = 'room'
+    type: str = "room"
 
 
 class RoomWithMessages(RoomSchema):
     """
     room model for the api with messages
     """
+
     admins: list[str]
     creator: str
     members: list[str]
     messages: list[MessageSchema]
 
-    @field_serializer('messages', when_used='unless-none')
+    @field_serializer("messages", when_used="unless-none")
     def serialize_messages(self, v: list[MessageSchema]) -> list[dict]:
         """serializes messages field"""
         from app.utils import group_messages
@@ -187,6 +197,7 @@ class RoomWithMessages(RoomSchema):
 
 class ResponseModel(BaseModel):
     """response model for the api"""
+
     message: str
     status_code: int
     data: dict | list | None = None

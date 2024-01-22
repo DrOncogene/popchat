@@ -17,4 +17,4 @@ SOCKETIO_CACHE = Cache(
     db=settings.REDIS_SOCKETIO_DB,
 )
 if not SESSION_CACHE.ping() or not SOCKETIO_CACHE.ping():
-    raise ConnectionError('redis cache is not available')
+    raise ConnectionError("redis cache is not available")

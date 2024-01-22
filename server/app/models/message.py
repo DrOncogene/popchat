@@ -16,7 +16,7 @@ class Message(Document):
     sender: str
     when: datetime
 
-    @field_validator('when', mode='before', check_fields=True)
+    @field_validator("when", mode="before", check_fields=True)
     def validate_when(cls, v: datetime) -> datetime:
         """validates the when field"""
         if type(v) is str:
@@ -29,11 +29,11 @@ class Message(Document):
         """serializes the message"""
         when_str = self.when.isoformat()
         return {
-            'id': str(self.id),
-            'text': self.text,
-            'sender': self.sender,
-            'when': when_str if '+' in when_str else when_str + 'Z',
+            "id": str(self.id),
+            "text": self.text,
+            "sender": self.sender,
+            "when": when_str if "+" in when_str else when_str + "Z",
         }
 
     class Settings:
-        name = 'messages'
+        name = "messages"

@@ -41,17 +41,17 @@ class Chat(Base):
         Serializes the chat
         """
         return {
-            'id': str(self.id),
-            'user_1': self.user_1.username,
-            'user_2': self.user_2.username,
-            'last_msg': self.last_msg,
-            'messages': group_messages(self.messages),
-            'type': 'chat',
-            'members': [self.user_1.username, self.user_2.username],
-            'created_at': f'{self.created_at.isoformat()}Z',
-            'updated_at': f'{self.created_at.isoformat()}Z',
+            "id": str(self.id),
+            "user_1": self.user_1.username,
+            "user_2": self.user_2.username,
+            "last_msg": self.last_msg,
+            "messages": group_messages(self.messages),
+            "type": "chat",
+            "members": [self.user_1.username, self.user_2.username],
+            "created_at": f"{self.created_at.isoformat()}Z",
+            "updated_at": f"{self.created_at.isoformat()}Z",
         }
 
     class Settings:
-        name = 'chats'
+        name = "chats"
         use_state_management = True

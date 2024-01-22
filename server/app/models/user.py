@@ -14,6 +14,7 @@ class User(Base):
     """
     Represents a User of the PopChat app
     """
+
     username: str = Indexed(str, unique=True, index_type=pymongo.TEXT)
     email: str = Indexed(str, unique=True, index_type=pymongo.TEXT)
     password: str
@@ -28,10 +29,10 @@ class User(Base):
         """
 
         return {
-            'username': self.username,
-            'email': self.email,
-            'id': str(self.id)
+            "username": self.username,
+            "email": self.email,
+            "id": str(self.id),
         }
 
     class Settings:
-        name = 'users'
+        name = "users"

@@ -45,18 +45,18 @@ class Room(Base):
         Serializes the room
         """
         return {
-            'id': str(self.id),
-            'name': self.name,
-            'creator': self.creator.username,
-            'members': [member.username for member in self.members],
-            'admins': [admin.username for admin in self.admins],
-            'messages': group_messages(self.messages),
-            'last_msg': self.last_msg,
-            'type': 'room',
-            'created_at': f'{self.created_at.isoformat()}Z',
-            'updated_at': f'{self.created_at.isoformat()}Z',
+            "id": str(self.id),
+            "name": self.name,
+            "creator": self.creator.username,
+            "members": [member.username for member in self.members],
+            "admins": [admin.username for admin in self.admins],
+            "messages": group_messages(self.messages),
+            "last_msg": self.last_msg,
+            "type": "room",
+            "created_at": f"{self.created_at.isoformat()}Z",
+            "updated_at": f"{self.created_at.isoformat()}Z",
         }
 
     class Settings:
-        name = 'rooms'
+        name = "rooms"
         use_state_management = True

@@ -19,20 +19,20 @@ from app.models.message import Message
 from app.settings import settings
 
 
-T = TypeVar('T', User, Chat, Room)
+T = TypeVar("T", User, Chat, Room)
 
 
 def get_mongo_uri() -> str:
     """returns the mongo uri"""
     if settings.DB_USER and settings.DB_PASSWD:
         return (
-            f'mongodb://{settings.DB_USER}:{settings.DB_PASSWD}'
-            f'@{settings.DB_HOST}:{settings.DB_PORT}/{settings.DB_NAME}'
+            f"mongodb://{settings.DB_USER}:{settings.DB_PASSWD}"
+            f"@{settings.DB_HOST}:{settings.DB_PORT}/{settings.DB_NAME}"
         )
 
     return (
-        f'mongodb://{settings.DB_HOST}:{settings.DB_PORT}/'
-        f'{settings.DB_NAME}'
+        f"mongodb://{settings.DB_HOST}:{settings.DB_PORT}/"
+        f"{settings.DB_NAME}"
     )
 
 
@@ -40,13 +40,13 @@ def get_rabbitmq_uri() -> str:
     """returns the rabbitmq uri"""
     if settings.RABBITMQ_USER and settings.RABBITMQ_PASSWD:
         return (
-            f'amqp://{settings.RABBITMQ_USER}:{settings.RABBITMQ_PASSWD}'
-            f'@{settings.RABBITMQ_HOST}:{settings.RABBITMQ_PORT}/'
+            f"amqp://{settings.RABBITMQ_USER}:{settings.RABBITMQ_PASSWD}"
+            f"@{settings.RABBITMQ_HOST}:{settings.RABBITMQ_PORT}/"
         )
 
     return (
-        f'amqp://guest:guest@{settings.RABBITMQ_HOST}'
-        f':{settings.RABBITMQ_PORT}/'
+        f"amqp://guest:guest@{settings.RABBITMQ_HOST}"
+        f":{settings.RABBITMQ_PORT}/"
     )
 
 
@@ -61,7 +61,7 @@ async def init_db(uri: str) -> None:
 
     await init_beanie(
         database=client[settings.DB_NAME],
-        document_models=[User, Chat, Room, Message]
+        document_models=[User, Chat, Room, Message],
     )
 
 
